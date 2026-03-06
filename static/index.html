@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Business Finder</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #252836;
+    --accent: #4f8ef7;
+    --accent-hover: #3a7de8;
+    --text: #e4e6f0;
+    --muted: #8890a8;
+    --green: #34d399;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --radius: 14px;
+    --gap: 16px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--surface);
+    padding: 16px var(--gap);
+    border-bottom: 1px solid #2a2d3e;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .search-bar input {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface2);
+    border: 1px solid #2f3347;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+  }
+
+  .search-bar input:focus { border-color: var(--accent); }
+
+  .btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: var(--accent-hover); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .filters {
+    display: flex;
+    gap: 8px;
+    padding: 12px var(--gap);
+    overflow-x: auto;
+    flex-wrap: wrap;
+    background: var(--surface);
+    border-bottom: 1px solid #2a2d3e;
+  }
+
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid #2f3347;
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .status-bar {
+    padding: 10px var(--gap);
+    font-size: 0.85rem;
+    color: var(--muted);
+    background: var(--bg);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--gap);
+    padding: var(--gap);
+  }
+
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid #2a2d3e;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: #3a3f5c; }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid #2f3347;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .card-meta {
+    font-size: 0.82rem;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .call-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #1a3a1a;
+    border: 1.5px solid var(--green);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--green);
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .call-btn:hover { background: #1e4a1e; }
+
+  .status-select {
+    background: var(--surface2);
+    border: 1px solid #2f3347;
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 0.88rem;
+    width: 100%;
+    cursor: pointer;
+    outline: none;
+  }
+  .status-select:focus { border-color: var(--accent); }
+
+  .notes-input {
+    background: var(--surface2);
+    border: 1px solid #2f3347;
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 0.85rem;
+    width: 100%;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    outline: none;
+  }
+  .notes-input:focus { border-color: var(--accent); }
+
+  .delete-btn {
+    background: none;
+    border: 1px solid #3a2a2a;
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--red);
+    font-size: 0.78rem;
+    cursor: pointer;
+    align-self: flex-end;
+    transition: background 0.15s;
+  }
+  .delete-btn:hover { background: #2a1a1a; }
+
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty p { font-size: 1.1rem; margin-bottom: 8px; }
+  .empty small { font-size: 0.85rem; }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid #2f3347;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 100;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 480px) {
+    .cards { grid-template-columns: 1fr; padding: 10px; gap: 10px; }
+    .card { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Business Finder</h1>
+  <div class="search-bar">
+    <input id="regionInput" type="text" placeholder="City, region or country..." />
+    <button class="btn" id="searchBtn" onclick="startSearch()">Search</button>
+  </div>
+</header>
+
+<div class="filters" id="filters">
+  <button class="filter-btn active" data-status="" onclick="setFilter(this, '')">All</button>
+  <button class="filter-btn" data-status="New" onclick="setFilter(this, 'New')">New</button>
+  <button class="filter-btn" data-status="Called" onclick="setFilter(this, 'Called')">Called</button>
+  <button class="filter-btn" data-status="Interested" onclick="setFilter(this, 'Interested')">Interested</button>
+  <button class="filter-btn" data-status="Not Interested" onclick="setFilter(this, 'Not Interested')">Not Interested</button>
+  <button class="filter-btn" data-status="No Answer" onclick="setFilter(this, 'No Answer')">No Answer</button>
+  <button class="filter-btn" data-status="Voicemail" onclick="setFilter(this, 'Voicemail')">Voicemail</button>
+</div>
+
+<div class="status-bar" id="statusBar">Loading...</div>
+<div class="cards" id="cards"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const STATUSES = ['New', 'Called', 'Interested', 'Not Interested', 'No Answer', 'Voicemail'];
+  let activeFilter = '';
+  let saveTimers = {};
+
+  async function api(method, path, body) {
+    const r = await fetch(path, {
+      method,
+      headers: body ? {'Content-Type': 'application/json'} : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  function setFilter(btn, status) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = status;
+    loadBusinesses();
+  }
+
+  function statusColor(status) {
+    const map = {
+      'New': '#4f8ef7',
+      'Called': '#fbbf24',
+      'Interested': '#34d399',
+      'Not Interested': '#f87171',
+      'No Answer': '#a78bfa',
+      'Voicemail': '#fb923c',
+    };
+    return map[status] || '#8890a8';
+  }
+
+  function renderCard(b) {
+    const opts = STATUSES.map(s =>
+      `<option value="${s}" ${b.status === s ? 'selected' : ''}>${s}</option>`
+    ).join('');
+    return `
+      <div class="card" id="card-${b.id}">
+        <div class="card-header">
+          <div class="card-name">${escHtml(b.name)}</div>
+          <span class="badge" style="color:${statusColor(b.status)};border-color:${statusColor(b.status)}22">${escHtml(b.status)}</span>
+        </div>
+        <div class="card-meta">
+          ${b.category ? `<span>🏷 ${escHtml(b.category)}</span>` : ''}
+          ${b.address && b.address !== 'N/A' ? `<span>📍 ${escHtml(b.address)}</span>` : ''}
+          ${b.region ? `<span>🔍 ${escHtml(b.region)}</span>` : ''}
+        </div>
+        <a class="call-btn" href="tel:${escHtml(b.phone)}">
+          📞 ${escHtml(b.phone)}
+        </a>
+        <select class="status-select" onchange="updateStatus(${b.id}, this.value)">${opts}</select>
+        <textarea class="notes-input" placeholder="Notes..." onInput="scheduleNoteSave(${b.id}, this.value)">${escHtml(b.notes || '')}</textarea>
+        <button class="delete-btn" onclick="deleteBusiness(${b.id})">Remove</button>
+      </div>`;
+  }
+
+  function escHtml(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function loadBusinesses() {
+    const params = new URLSearchParams();
+    if (activeFilter) params.set('status', activeFilter);
+    const businesses = await api('GET', `/businesses?${params}`);
+    const container = document.getElementById('cards');
+    const bar = document.getElementById('statusBar');
+    bar.textContent = `${businesses.length} business${businesses.length !== 1 ? 'es' : ''} found`;
+    if (!businesses.length) {
+      container.innerHTML = `<div class="empty"><p>No businesses found</p><small>Search a region to find leads</small></div>`;
+      return;
+    }
+    container.innerHTML = businesses.map(renderCard).join('');
+  }
+
+  async function startSearch() {
+    const region = document.getElementById('regionInput').value.trim();
+    if (!region) { toast('Please enter a region'); return; }
+    const btn = document.getElementById('searchBtn');
+    btn.disabled = true;
+    btn.textContent = 'Searching...';
+    try {
+      await api('POST', '/search', { region });
+      toast(`Searching "${region}"... results will appear shortly`);
+      setTimeout(loadBusinesses, 5000);
+      setTimeout(loadBusinesses, 15000);
+      setTimeout(loadBusinesses, 30000);
+    } catch(e) {
+      toast('Search failed: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Search';
+    }
+  }
+
+  async function updateStatus(id, status) {
+    await api('PATCH', `/businesses/${id}`, { status });
+    toast('Status updated');
+    await loadBusinesses();
+  }
+
+  function scheduleNoteSave(id, notes) {
+    clearTimeout(saveTimers[id]);
+    saveTimers[id] = setTimeout(async () => {
+      await api('PATCH', `/businesses/${id}`, { notes });
+    }, 800);
+  }
+
+  async function deleteBusiness(id) {
+    if (!confirm('Remove this business?')) return;
+    await api('DELETE', `/businesses/${id}`);
+    toast('Removed');
+    await loadBusinesses();
+  }
+
+  // Initial load
+  loadBusinesses();
+  setInterval(loadBusinesses, 30000); // auto-refresh every 30s
+</script>
+</body>
+</html>
