@@ -1,13 +1,15 @@
 import os
 import re
+import secrets
 import threading
 import warnings
 from contextlib import asynccontextmanager
 
 import httpx
 import uvicorn
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -126,13 +128,27 @@ def _check_website(name: str, region: str) -> dict:
     return {"has_website": False, "url": None}
 
 
+security = HTTPBasic()
+
+AUTH_USER = os.environ.get("AUTH_USER", "admin")
+AUTH_PASS = os.environ.get("AUTH_PASS", "changeme")
+
+
+def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    ok_user = secrets.compare_digest(credentials.username.encode(), AUTH_USER.encode())
+    ok_pass = secrets.compare_digest(credentials.password.encode(), AUTH_PASS.encode())
+    if not (ok_user and ok_pass):
+        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
+    return credentials.username
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, dependencies=[Depends(verify_credentials)])
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
