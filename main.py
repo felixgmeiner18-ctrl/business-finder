@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import secrets
@@ -7,9 +8,9 @@ from contextlib import asynccontextmanager
 
 import httpx
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.requests import Request
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -128,18 +129,14 @@ def _check_website(name: str, region: str) -> dict:
     return {"has_website": False, "url": None}
 
 
-security = HTTPBasic()
-
 AUTH_USER = os.environ.get("AUTH_USER", "admin")
 AUTH_PASS = os.environ.get("AUTH_PASS", "changeme")
 
-
-def verify_credentials(credentials: HTTPBasicCredentials = Depends(security)):
-    ok_user = secrets.compare_digest(credentials.username.encode(), AUTH_USER.encode())
-    ok_pass = secrets.compare_digest(credentials.password.encode(), AUTH_PASS.encode())
-    if not (ok_user and ok_pass):
-        raise HTTPException(status_code=401, detail="Unauthorized", headers={"WWW-Authenticate": "Basic"})
-    return credentials.username
+_UNAUTH = Response(
+    content="Unauthorized",
+    status_code=401,
+    headers={"WWW-Authenticate": 'Basic realm="Business Finder"'},
+)
 
 
 @asynccontextmanager
@@ -148,8 +145,29 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan, dependencies=[Depends(verify_credentials)])
+app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.middleware("http")
+async def basic_auth(request: Request, call_next):
+    if request.url.path == "/health":
+        return await call_next(request)
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Basic "):
+        return _UNAUTH
+    try:
+        user, pw = base64.b64decode(auth[6:]).decode().split(":", 1)
+    except Exception:
+        return _UNAUTH
+    if not (secrets.compare_digest(user, AUTH_USER) and secrets.compare_digest(pw, AUTH_PASS)):
+        return _UNAUTH
+    return await call_next(request)
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 @app.get("/")

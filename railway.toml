@@ -3,4 +3,4 @@ builder = "NIXPACKS"
 
 [deploy]
 startCommand = "python main.py"
-healthcheckPath = "/"
+healthcheckPath = "/health"
