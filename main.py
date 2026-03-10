@@ -80,12 +80,17 @@ Available Google Font pairings (choose one):
 - Libre Baskerville + Source Sans Pro
 - Josefin Sans + Montserrat
 - Crimson Pro + Work Sans
+- Outfit + Plus Jakarta Sans
 
 Layout variants (choose one per section):
 - hero: full-bleed-atmospheric | split-cinematic | minimal-centered
 - services: card-grid | icon-columns | horizontal-feature
 - about: split-portrait-story | centered-founder | full-text-elegant
 - contact: phone-prominent | minimal-form | split-with-info
+
+Choose design_tokens to reflect the brand personality:
+- border_radius: 0px = sharp/editorial, 4px = professional, 12px = modern, 99px = playful/pill
+- button_style: solid = confident, outline = refined, soft-shadow = warm, minimalist = typographic
 
 Return ONLY valid JSON (no markdown, no explanation):
 {{
@@ -103,6 +108,10 @@ Return ONLY valid JSON (no markdown, no explanation):
   "fonts": {{
     "heading": "Google Font Name",
     "body": "Google Font Name"
+  }},
+  "design_tokens": {{
+    "border_radius": "CSS value: 0px | 4px | 12px | 99px",
+    "button_style": "solid | outline | soft-shadow | minimalist"
   }},
   "animations": "brief animation style description",
   "decorative_style": "brief decorative element description",
@@ -126,6 +135,10 @@ Return ONLY valid JSON (no markdown, no explanation):
     "cta": "Handlungsaufforderung auf Deutsch",
     "phone": "{phone}",
     "address": "{address}"
+  }},
+  "seo": {{
+    "meta_title": "Optimized page title max 60 chars",
+    "meta_description": "Compelling German meta description max 155 chars"
   }}
 }}"""
 
@@ -399,12 +412,12 @@ async def generate_site(payload: GeneratePayload):
         raise HTTPException(500, "ANTHROPIC_API_KEY is not set in environment variables")
 
     try:
-        client = anthropic.Anthropic(api_key=api_key)
+        client = anthropic.AsyncAnthropic(api_key=api_key)
         prompt = _build_generator_prompt(biz)
 
-        message = client.messages.create(
+        message = await client.messages.create(
             model="claude-opus-4-6",
-            max_tokens=1200,
+            max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],
         )
 
