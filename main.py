@@ -394,23 +394,34 @@ async def generate_site(payload: GeneratePayload):
     if not biz:
         raise HTTPException(404, "Business not found")
 
-    client = anthropic.Anthropic()
-    prompt = _build_generator_prompt(biz)
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise HTTPException(500, "ANTHROPIC_API_KEY is not set in environment variables")
 
-    message = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=1200,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        prompt = _build_generator_prompt(biz)
 
-    raw = message.content[0].text.strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
+        message = client.messages.create(
+            model="claude-opus-4-6",
+            max_tokens=1200,
+            messages=[{"role": "user", "content": prompt}],
+        )
 
-    spec = json.loads(raw)
-    update_site_info(payload.business_id, spec.get("theme", ""), json.dumps(spec.get("sections", [])))
-    return spec
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+
+        spec = json.loads(raw)
+        update_site_info(payload.business_id, spec.get("theme", ""), json.dumps(spec.get("sections", [])))
+        return spec
+    except anthropic.AuthenticationError:
+        raise HTTPException(500, "ANTHROPIC_API_KEY is invalid — check the value in Railway")
+    except anthropic.APIError as e:
+        raise HTTPException(500, f"Anthropic API error: {e}")
+    except json.JSONDecodeError as e:
+        raise HTTPException(500, f"Failed to parse AI response as JSON: {e}")
 
 
 @app.post("/api/generator/export")
