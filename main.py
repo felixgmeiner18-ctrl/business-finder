@@ -1,11 +1,15 @@
 import base64
+import io
+import json
 import os
 import re
 import secrets
 import threading
 import warnings
+import zipfile
 from contextlib import asynccontextmanager
 
+import anthropic
 import httpx
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
@@ -20,6 +24,7 @@ from database import (
     get_businesses,
     init_db,
     update_business,
+    update_site_info,
     upsert_business,
 )
 from scraper import search_businesses
@@ -37,6 +42,92 @@ class SearchPayload(BaseModel):
 
 class QueuePayload(BaseModel):
     regions: list[str]
+
+
+class GeneratePayload(BaseModel):
+    business_id: int
+
+
+class ExportPayload(BaseModel):
+    business_id: int
+    html: str
+    theme: str = ""
+    sections: list = []
+
+
+def _build_generator_prompt(biz: dict) -> str:
+    name = biz.get("name", "")
+    category = biz.get("category", "business") or "business"
+    region = biz.get("region", "Deutschland") or "Deutschland"
+    phone = biz.get("phone", "") or ""
+    address = biz.get("address", "") or ""
+    return f"""You are a world-class web designer creating a premium website for a German small business.
+
+Business: {name}
+Industry: {category}
+City: {region}
+Phone: {phone}
+Address: {address}
+
+Design a genuinely high-end, unique website. Avoid generic designs.
+Think: what visual identity would make this specific {category} business feel premium, trustworthy, and memorable to German customers?
+
+Available Google Font pairings (choose one):
+- Playfair Display + Lato
+- Cormorant Garamond + Raleway
+- Fraunces + Inter
+- DM Serif Display + DM Sans
+- Libre Baskerville + Source Sans Pro
+- Josefin Sans + Montserrat
+- Crimson Pro + Work Sans
+
+Layout variants (choose one per section):
+- hero: full-bleed-atmospheric | split-cinematic | minimal-centered
+- services: card-grid | icon-columns | horizontal-feature
+- about: split-portrait-story | centered-founder | full-text-elegant
+- contact: phone-prominent | minimal-form | split-with-info
+
+Return ONLY valid JSON (no markdown, no explanation):
+{{
+  "personality": "3-word brand character",
+  "mood": "one evocative sentence describing the visual feeling",
+  "theme": "slug-style-theme-name",
+  "colors": {{
+    "primary": "#hexcolor",
+    "accent": "#hexcolor",
+    "background": "#hexcolor",
+    "surface": "#hexcolor",
+    "text": "#hexcolor",
+    "text_muted": "#hexcolor"
+  }},
+  "fonts": {{
+    "heading": "Google Font Name",
+    "body": "Google Font Name"
+  }},
+  "animations": "brief animation style description",
+  "decorative_style": "brief decorative element description",
+  "sections": ["hero", "services", "about", "contact"],
+  "layout": {{
+    "hero": "chosen-variant",
+    "services": "chosen-variant",
+    "about": "chosen-variant",
+    "contact": "chosen-variant"
+  }},
+  "copy": {{
+    "business_name": "{name}",
+    "headline": "compelling German headline (not generic, specific to this type of business)",
+    "tagline": "short evocative German tagline",
+    "services": [
+      {{"name": "Leistung 1", "description": "1-2 authentic Sätze auf Deutsch", "icon": "relevant emoji"}},
+      {{"name": "Leistung 2", "description": "1-2 authentic Sätze auf Deutsch", "icon": "relevant emoji"}},
+      {{"name": "Leistung 3", "description": "1-2 authentic Sätze auf Deutsch", "icon": "relevant emoji"}}
+    ],
+    "about": "2-3 warm, authentic Sätze auf Deutsch",
+    "cta": "Handlungsaufforderung auf Deutsch",
+    "phone": "{phone}",
+    "address": "{address}"
+  }}
+}}"""
 
 
 _search_state = {"searching": False, "region": "", "queue": [], "queue_total": 0, "queue_done": 0}
@@ -290,6 +381,55 @@ def verify_website(business_id: int):
 def delete(business_id: int):
     delete_business(business_id)
     return {"ok": True}
+
+
+@app.get("/generator")
+def generator_page():
+    return FileResponse("static/generator.html")
+
+
+@app.post("/api/generator/generate")
+async def generate_site(payload: GeneratePayload):
+    biz = get_business(payload.business_id)
+    if not biz:
+        raise HTTPException(404, "Business not found")
+
+    client = anthropic.Anthropic()
+    prompt = _build_generator_prompt(biz)
+
+    message = client.messages.create(
+        model="claude-opus-4-6",
+        max_tokens=1200,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    raw = message.content[0].text.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+
+    spec = json.loads(raw)
+    update_site_info(payload.business_id, spec.get("theme", ""), json.dumps(spec.get("sections", [])))
+    return spec
+
+
+@app.post("/api/generator/export")
+async def export_site(payload: ExportPayload):
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("index.html", payload.html)
+        zf.writestr(
+            "README.txt",
+            "Website Export\n\nDateien:\n- index.html: Öffnen Sie diese Datei im Browser\n\n"
+            "Für die Veröffentlichung laden Sie index.html auf Ihren Webserver hoch.\n",
+        )
+    buf.seek(0)
+    theme_slug = re.sub(r"[^a-z0-9-]", "", (payload.theme or "website").lower()) or "website"
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=website-{theme_slug}.zip"},
+    )
 
 
 if __name__ == "__main__":

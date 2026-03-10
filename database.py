@@ -64,6 +64,24 @@ def init_db():
             conn.execute("ALTER TABLE businesses ADD COLUMN website_url TEXT")
         if "email" not in columns:
             conn.execute("ALTER TABLE businesses ADD COLUMN email TEXT DEFAULT ''")
+        if "site_generated" not in columns:
+            conn.execute("ALTER TABLE businesses ADD COLUMN site_generated INTEGER DEFAULT 0")
+        if "site_variation" not in columns:
+            conn.execute("ALTER TABLE businesses ADD COLUMN site_variation INTEGER")
+        if "site_sections" not in columns:
+            conn.execute("ALTER TABLE businesses ADD COLUMN site_sections TEXT")
+
+        # Contact submissions table for agency website
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS contact_submissions (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                name       TEXT NOT NULL,
+                email      TEXT NOT NULL,
+                phone      TEXT DEFAULT '',
+                message    TEXT NOT NULL,
+                created_at TEXT
+            )
+        """)
         conn.commit()
 
 
@@ -148,3 +166,28 @@ def delete_business(business_id):
     with get_conn() as conn:
         conn.execute("DELETE FROM businesses WHERE id=?", (business_id,))
         conn.commit()
+
+
+def update_site_info(business_id, variation, sections_json):
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE businesses SET site_generated=1, site_variation=?, site_sections=? WHERE id=?",
+            (variation, sections_json, business_id),
+        )
+        conn.commit()
+
+
+def save_contact_submission(name, email, phone, message):
+    from datetime import datetime
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO contact_submissions (name, email, phone, message, created_at) VALUES (?, ?, ?, ?, ?)",
+            (name, email, phone, message, datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+
+
+def get_contact_submissions():
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM contact_submissions ORDER BY created_at DESC").fetchall()
+    return [dict(r) for r in rows]

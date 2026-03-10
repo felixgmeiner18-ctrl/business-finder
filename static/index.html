@@ -723,6 +723,21 @@ header {
 .verify-btn:hover { background: var(--blue-soft); border-color: var(--blue); }
 .verify-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.build-btn {
+  background: none;
+  border: 1px solid rgba(34,197,94,0.4);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #22c55e;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.build-btn:hover { background: rgba(34,197,94,0.1); border-color: #22c55e; }
+
 .del-btn {
   background: none;
   border: none;
@@ -1311,6 +1326,7 @@ function buildCard(b, idx) {
       </div>
       <textarea class="notes-area" placeholder="Add notes…" oninput="queueNote(${b.id}, this.value)">${esc(b.notes||'')}</textarea>
       <div class="footer-actions">
+        <button class="build-btn" onclick="buildSite(${b.id})">🌐 Build Site</button>
         <button class="email-btn" onclick="draftEmail(${b.id}, this)">📧 Draft Email</button>
         <button class="verify-btn" onclick="verifyBusiness(${b.id}, this)">🔍 Verify</button>
         <button class="del-btn" onclick="del(${b.id})">Remove</button>
@@ -1459,6 +1475,11 @@ async function del(id) {
   all = all.filter(b => b.id !== id);
   renderStats(all); updateCats(all); applyFilters();
   toast('Lead removed');
+}
+
+// ── build site ────────────────────────
+function buildSite(id) {
+  window.open(`/generator?id=${id}`, '_blank');
 }
 
 // ── email draft ───────────────────────
