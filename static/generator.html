@@ -742,6 +742,10 @@ ${btnCSS}
 .reveal--delay-1{transition-delay:0.12s}
 .reveal--delay-2{transition-delay:0.24s}
 .reveal--delay-3{transition-delay:0.36s}
+/* Hero word-split reveal */
+@keyframes wordUp{from{transform:translateY(110%);opacity:0}to{transform:translateY(0);opacity:1}}
+.word-wrap{display:inline-block;overflow:hidden;vertical-align:top;line-height:inherit}
+.word-inner{display:inline-block;animation:wordUp .9s cubic-bezier(.16,1,.3,1) both;will-change:transform}
 /* Responsive */
 @media(max-width:900px){
   .hero--cinematic{grid-template-columns:1fr}
@@ -800,6 +804,13 @@ const io=new IntersectionObserver((entries)=>{
   });
 },{threshold:0.15});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+/* Hero headline word-split */
+(function(){
+  const h=document.querySelector('.hero__headline');
+  if(!h)return;
+  const words=h.textContent.trim().split(/\s+/);
+  h.innerHTML=words.map((w,i)=>\`<span class="word-wrap"><span class="word-inner" style="animation-delay:\${0.2+i*0.12}s">\${w}</span></span>\`).join(' ');
+})();
 <\/script>
 </body>
 </html>`;
