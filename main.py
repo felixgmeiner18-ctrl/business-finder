@@ -23,6 +23,7 @@ from database import (
     get_business,
     get_businesses,
     init_db,
+    save_contact_submission,
     update_business,
     update_site_info,
     upsert_business,
@@ -53,6 +54,13 @@ class ExportPayload(BaseModel):
     html: str
     theme: str = ""
     sections: list = []
+
+
+class ContactPayload(BaseModel):
+    name: str
+    email: str
+    phone: str = ""
+    message: str
 
 
 def _build_generator_prompt(biz: dict) -> str:
@@ -253,9 +261,12 @@ app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
+PUBLIC_PATHS = {"/", "/health", "/api/contact"}
+
+
 @app.middleware("http")
 async def basic_auth(request: Request, call_next):
-    if request.url.path == "/health":
+    if request.url.path in PUBLIC_PATHS:
         return await call_next(request)
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Basic "):
@@ -275,7 +286,12 @@ def health():
 
 
 @app.get("/")
-def index():
+def portfolio():
+    return FileResponse("static/portfolio.html")
+
+
+@app.get("/admin")
+def admin_dashboard():
     return FileResponse("static/index.html")
 
 
@@ -396,9 +412,17 @@ def delete(business_id: int):
     return {"ok": True}
 
 
-@app.get("/generator")
+@app.get("/admin/generator")
 def generator_page():
     return FileResponse("static/generator.html")
+
+
+@app.post("/api/contact")
+async def submit_contact(payload: ContactPayload):
+    if not payload.name.strip() or not payload.email.strip() or not payload.message.strip():
+        raise HTTPException(400, "Name, E-Mail und Nachricht sind erforderlich")
+    save_contact_submission(payload.name.strip(), payload.email.strip(), payload.phone.strip(), payload.message.strip())
+    return {"ok": True}
 
 
 @app.post("/api/generator/generate")
