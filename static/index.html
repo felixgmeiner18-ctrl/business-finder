@@ -1112,6 +1112,9 @@ const PRIO_LABEL = { 5:'Hot', 4:'High', 3:'Med', 2:'Low', 1:'Cold' };
 const PRIO_ICON  = { 5:'🔥', 4:'🟠', 3:'🟡', 2:'🔵', 1:'⚪' };
 
 let all = [];
+let totalCount = 0;
+let currentOffset = 0;
+const PAGE_SIZE = 500;
 let activeStatus = '';
 let saveTimers = {};
 let pollTimer = null;
@@ -1211,6 +1214,9 @@ function renderStats(data) {
   const wrap  = document.getElementById('statsWrap');
   const inner = document.getElementById('statsInner');
   if (!data.length) { wrap.style.display = 'none'; return; }
+  // Show total DB count if paginated
+  const limitNote = totalCount > all.length
+    ? `<span style="font-size:0.75rem;color:var(--muted);margin-left:8px;">${all.length} von ${totalCount} geladen</span>` : '';
 
   const c = {};
   STATUSES.forEach(s => c[s] = 0);
@@ -1231,7 +1237,7 @@ function renderStats(data) {
   inner.innerHTML =
     `<div class="stat-item">
        <div class="stat-dot" style="background:var(--muted2)"></div>
-       <div class="stat-num">${data.length}</div>
+       <div class="stat-num">${totalCount || data.length}${limitNote}</div>
        <div class="stat-lbl">Total</div>
      </div>` +
     STATUSES.filter(s => s !== 'Has Website').map(s =>
@@ -1345,15 +1351,65 @@ function renderCards(data) {
     </div>`;
     return;
   }
-  el.innerHTML = data.map((b,i) => buildCard(b,i)).join('');
+  // Chunked rendering — prevents browser freeze for large datasets
+  el.innerHTML = '';
+  const CHUNK = 50;
+  let i = 0;
+  function renderChunk() {
+    const frag = document.createDocumentFragment();
+    const end = Math.min(i + CHUNK, data.length);
+    while (i < end) {
+      const div = document.createElement('div');
+      div.innerHTML = buildCard(data[i], i);
+      frag.appendChild(div.firstElementChild);
+      i++;
+    }
+    el.appendChild(frag);
+    if (i < data.length) requestAnimationFrame(renderChunk);
+  }
+  requestAnimationFrame(renderChunk);
 }
 
 // ── load ──────────────────────────────
 async function load() {
-  all = await api('GET', '/businesses');
+  currentOffset = 0;
+  const resp = await api('GET', `/businesses?limit=${PAGE_SIZE}&offset=0`);
+  all = resp.items;
+  totalCount = resp.total;
   renderStats(all);
   updateCats(all);
   applyFilters();
+  updateLoadMoreBtn();
+}
+
+async function loadMore() {
+  currentOffset += PAGE_SIZE;
+  const cat = document.getElementById('catSelect').value;
+  const status = activeStatus && !activeStatus.startsWith('__') ? activeStatus : '';
+  let url = `/businesses?limit=${PAGE_SIZE}&offset=${currentOffset}`;
+  if (status) url += `&status=${encodeURIComponent(status)}`;
+  if (cat) url += `&category=${encodeURIComponent(cat)}`;
+  const resp = await api('GET', url);
+  all = all.concat(resp.items);
+  totalCount = resp.total;
+  updateCats(all);
+  applyFilters();
+  updateLoadMoreBtn();
+}
+
+function updateLoadMoreBtn() {
+  let btn = document.getElementById('loadMoreBtn');
+  if (!btn) {
+    btn = document.createElement('div');
+    btn.id = 'loadMoreBtn';
+    btn.style.cssText = 'text-align:center;padding:24px 0 40px;';
+    document.getElementById('cards').insertAdjacentElement('afterend', btn);
+  }
+  const remaining = totalCount - all.length;
+  if (remaining <= 0) { btn.innerHTML = ''; return; }
+  btn.innerHTML = `<button onclick="loadMore()" style="padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.88rem;font-weight:600;cursor:pointer;">
+    Weitere ${Math.min(remaining, PAGE_SIZE)} laden (${remaining} verbleibend von ${totalCount})
+  </button>`;
 }
 
 // ── search ────────────────────────────

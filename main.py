@@ -300,8 +300,10 @@ def list_businesses(
     status: str | None = Query(None),
     region: str | None = Query(None),
     category: str | None = Query(None),
+    limit: int = Query(500, ge=1, le=5000),
+    offset: int = Query(0, ge=0),
 ):
-    return get_businesses(status=status, region=region, category=category)
+    return get_businesses(status=status, region=region, category=category, limit=limit, offset=offset)
 
 
 @app.post("/search")

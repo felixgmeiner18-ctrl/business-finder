@@ -71,6 +71,12 @@ def init_db():
         if "site_sections" not in columns:
             conn.execute("ALTER TABLE businesses ADD COLUMN site_sections TEXT")
 
+        # Indices for fast filtering + sorting
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_status   ON businesses(status)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_region   ON businesses(region)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_category ON businesses(category)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_found_at ON businesses(found_at DESC)")
+
         # Contact submissions table for agency website
         conn.execute("""
             CREATE TABLE IF NOT EXISTS contact_submissions (
@@ -102,29 +108,33 @@ def upsert_business(name, phone, address, category, region, email=""):
         return True
 
 
-def get_businesses(status=None, region=None, category=None):
-    query = "SELECT * FROM businesses WHERE 1=1"
+def get_businesses(status=None, region=None, category=None, limit=500, offset=0):
+    base = "FROM businesses WHERE 1=1"
     params = []
     if status:
-        query += " AND status=?"
+        base += " AND status=?"
         params.append(status)
     if region:
-        query += " AND region LIKE ?"
+        base += " AND region LIKE ?"
         params.append(f"%{region}%")
     if category:
-        query += " AND category LIKE ?"
+        base += " AND category LIKE ?"
         params.append(f"%{category}%")
-    query += " ORDER BY found_at DESC"
+
     with get_conn() as conn:
-        rows = conn.execute(query, params).fetchall()
+        total = conn.execute(f"SELECT COUNT(*) {base}", params).fetchone()[0]
+        rows = conn.execute(
+            f"SELECT * {base} ORDER BY found_at DESC LIMIT ? OFFSET ?",
+            params + [limit, offset],
+        ).fetchall()
+
     results = []
     for r in rows:
         d = dict(r)
         d["priority"] = compute_priority(d.get("category"))
         results.append(d)
-    # Sort: priority DESC (hot first), then by found_at DESC
-    results.sort(key=lambda b: (-b["priority"], b.get("found_at") or ""), reverse=False)
-    return results
+    results.sort(key=lambda b: -b["priority"])
+    return {"items": results, "total": total, "limit": limit, "offset": offset}
 
 
 def update_business(business_id, status=None, notes=None, follow_up=None, website_url=None):
