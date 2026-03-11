@@ -423,11 +423,15 @@ header {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: rise 0.35s ease both;
   transition: box-shadow 0.2s, transform 0.2s;
+  /* Skip layout/paint for off-screen cards — biggest perf win */
+  content-visibility: auto;
+  contain-intrinsic-size: 0 280px;
+  contain: layout style;
 }
+.card.animate-in { animation: rise 0.3s ease both; }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 .card:hover {
@@ -1021,7 +1025,7 @@ header {
       <span class="filter-search-icon">&#9906;</span>
       <input class="filter-input" id="liveSearch" type="text"
              placeholder="Search name, phone, address…"
-             oninput="applyFilters()" />
+             oninput="scheduleFilter()" />
     </div>
     <div class="filter-controls">
       <div class="seg-group" id="segGroup">
@@ -1118,6 +1122,12 @@ const PAGE_SIZE = 500;
 let activeStatus = '';
 let saveTimers = {};
 let pollTimer = null;
+let filterTimer = null;
+
+function scheduleFilter() {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(applyFilters, 120);
+}
 
 // ── helpers ───────────────────────────
 function today() {
@@ -1341,7 +1351,7 @@ function buildCard(b, idx) {
   </div>`;
 }
 
-function renderCards(data) {
+function renderCards(data, animate = false) {
   const el = document.getElementById('cards');
   if (!data.length) {
     el.innerHTML = `<div class="empty">
@@ -1351,65 +1361,84 @@ function renderCards(data) {
     </div>`;
     return;
   }
-  // Chunked rendering — prevents browser freeze for large datasets
   el.innerHTML = '';
-  const CHUNK = 50;
+  // Larger chunks — content-visibility:auto means off-screen cards are skipped anyway
+  const CHUNK = 150;
   let i = 0;
-  function renderChunk() {
+  const scheduler = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : requestAnimationFrame;
+  function renderChunk(deadline) {
     const frag = document.createDocumentFragment();
+    // With rIC: keep rendering while browser has idle time (>2ms budget)
+    const hasTime = () => deadline?.timeRemaining ? deadline.timeRemaining() > 2 : true;
     const end = Math.min(i + CHUNK, data.length);
-    while (i < end) {
+    while (i < end && hasTime()) {
       const div = document.createElement('div');
       div.innerHTML = buildCard(data[i], i);
-      frag.appendChild(div.firstElementChild);
+      const card = div.firstElementChild;
+      if (animate) card.classList.add('animate-in');
+      frag.appendChild(card);
       i++;
     }
     el.appendChild(frag);
-    if (i < data.length) requestAnimationFrame(renderChunk);
+    if (i < data.length) scheduler(renderChunk);
   }
-  requestAnimationFrame(renderChunk);
+  scheduler(renderChunk);
 }
 
 // ── load ──────────────────────────────
 async function load() {
   currentOffset = 0;
+  loadingMore = false;
   const resp = await api('GET', `/businesses?limit=${PAGE_SIZE}&offset=0`);
   all = resp.items;
   totalCount = resp.total;
   renderStats(all);
   updateCats(all);
   applyFilters();
-  updateLoadMoreBtn();
+  setupSentinel();
 }
 
+let loadingMore = false;
+let infiniteScrollIO = null;
+
 async function loadMore() {
+  if (loadingMore || all.length >= totalCount) return;
+  loadingMore = true;
+  const sentinel = document.getElementById('scrollSentinel');
+  if (sentinel) sentinel.textContent = 'Lädt…';
   currentOffset += PAGE_SIZE;
   const cat = document.getElementById('catSelect').value;
   const status = activeStatus && !activeStatus.startsWith('__') ? activeStatus : '';
   let url = `/businesses?limit=${PAGE_SIZE}&offset=${currentOffset}`;
   if (status) url += `&status=${encodeURIComponent(status)}`;
   if (cat) url += `&category=${encodeURIComponent(cat)}`;
-  const resp = await api('GET', url);
-  all = all.concat(resp.items);
-  totalCount = resp.total;
-  updateCats(all);
-  applyFilters();
-  updateLoadMoreBtn();
+  try {
+    const resp = await api('GET', url);
+    all = all.concat(resp.items);
+    totalCount = resp.total;
+    updateCats(all);
+    applyFilters();
+  } finally {
+    loadingMore = false;
+    setupSentinel();
+  }
 }
 
-function updateLoadMoreBtn() {
-  let btn = document.getElementById('loadMoreBtn');
-  if (!btn) {
-    btn = document.createElement('div');
-    btn.id = 'loadMoreBtn';
-    btn.style.cssText = 'text-align:center;padding:24px 0 40px;';
-    document.getElementById('cards').insertAdjacentElement('afterend', btn);
+function setupSentinel() {
+  if (infiniteScrollIO) infiniteScrollIO.disconnect();
+  let sentinel = document.getElementById('scrollSentinel');
+  if (!sentinel) {
+    sentinel = document.createElement('div');
+    sentinel.id = 'scrollSentinel';
+    sentinel.style.cssText = 'height:1px;margin-top:8px;font-size:0.8rem;color:var(--muted);text-align:center;padding:8px 0;';
+    document.getElementById('cards').insertAdjacentElement('afterend', sentinel);
   }
-  const remaining = totalCount - all.length;
-  if (remaining <= 0) { btn.innerHTML = ''; return; }
-  btn.innerHTML = `<button onclick="loadMore()" style="padding:10px 28px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.88rem;font-weight:600;cursor:pointer;">
-    Weitere ${Math.min(remaining, PAGE_SIZE)} laden (${remaining} verbleibend von ${totalCount})
-  </button>`;
+  if (all.length >= totalCount) { sentinel.textContent = ''; return; }
+  sentinel.textContent = `↓ ${totalCount - all.length} weitere`;
+  infiniteScrollIO = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) loadMore();
+  }, { rootMargin: '200px' });
+  infiniteScrollIO.observe(sentinel);
 }
 
 // ── search ────────────────────────────
