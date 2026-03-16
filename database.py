@@ -77,6 +77,14 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_category ON businesses(category)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_found_at ON businesses(found_at DESC)")
 
+        # Settings table for configurable signature etc.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
+
         # Contact submissions table for agency website
         conn.execute("""
             CREATE TABLE IF NOT EXISTS contact_submissions (
@@ -194,6 +202,35 @@ def save_contact_submission(name, email, phone, message):
             "INSERT INTO contact_submissions (name, email, phone, message, created_at) VALUES (?, ?, ?, ?, ?)",
             (name, email, phone, message, datetime.utcnow().isoformat()),
         )
+        conn.commit()
+
+
+_SETTINGS_DEFAULTS = {
+    "sender_name": "",
+    "sender_company": "PageBuilder",
+    "sender_email": "",
+    "sender_phone": "",
+}
+
+
+def get_settings() -> dict:
+    """Return all settings as a dict, with defaults for missing keys."""
+    result = dict(_SETTINGS_DEFAULTS)
+    with get_conn() as conn:
+        rows = conn.execute("SELECT key, value FROM settings").fetchall()
+    for r in rows:
+        result[r["key"]] = r["value"]
+    return result
+
+
+def save_settings(data: dict):
+    """Upsert settings from a dict."""
+    with get_conn() as conn:
+        for key, value in data.items():
+            conn.execute(
+                "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+                (key, str(value)),
+            )
         conn.commit()
 
 

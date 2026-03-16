@@ -1004,7 +1004,10 @@ header {
           <div class="logo-sub">Finds shops with no website</div>
         </div>
       </div>
-      <div class="live-dot">Live</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="openSettingsModal()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:4px;border-radius:6px;transition:color .2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'" title="Einstellungen">&#9881;</button>
+        <div class="live-dot">Live</div>
+      </div>
     </div>
     <div class="region-row">
       <div class="search-field">
@@ -1093,6 +1096,38 @@ header {
     <div class="modal-actions">
       <button class="modal-btn modal-btn-secondary" onclick="copyEmail()">Copy Text</button>
       <button class="modal-btn modal-btn-primary" onclick="openMailto()">Open in Mail App</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal" onclick="if(event.target===this)closeSettingsModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Einstellungen</span>
+      <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="modal-field-label">Name</div>
+        <input class="modal-input" id="settingName" type="text" placeholder="Max Mustermann" />
+      </div>
+      <div>
+        <div class="modal-field-label">Firma</div>
+        <input class="modal-input" id="settingCompany" type="text" placeholder="PageBuilder" />
+      </div>
+      <div>
+        <div class="modal-field-label">E-Mail</div>
+        <input class="modal-input" id="settingEmail" type="email" placeholder="mail@example.com" />
+      </div>
+      <div>
+        <div class="modal-field-label">Telefon</div>
+        <input class="modal-input" id="settingPhone" type="text" placeholder="+43 123 456789" />
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-secondary" onclick="closeSettingsModal()">Abbrechen</button>
+      <button class="modal-btn modal-btn-primary" onclick="saveSettings()">Speichern</button>
     </div>
   </div>
 </div>
@@ -1611,9 +1646,46 @@ function openMailto() {
   closeEmailModal();
 }
 
+// ── settings ──────────────────────────
+async function openSettingsModal() {
+  try {
+    const data = await api('GET', '/api/settings');
+    document.getElementById('settingName').value = data.sender_name || '';
+    document.getElementById('settingCompany').value = data.sender_company || '';
+    document.getElementById('settingEmail').value = data.sender_email || '';
+    document.getElementById('settingPhone').value = data.sender_phone || '';
+  } catch(e) {
+    // defaults are fine
+  }
+  document.getElementById('settingsModal').classList.add('open');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+
+async function saveSettings() {
+  const payload = {
+    sender_name: document.getElementById('settingName').value,
+    sender_company: document.getElementById('settingCompany').value,
+    sender_email: document.getElementById('settingEmail').value,
+    sender_phone: document.getElementById('settingPhone').value,
+  };
+  try {
+    await api('PUT', '/api/settings', payload);
+    toast('Einstellungen gespeichert!');
+    closeSettingsModal();
+  } catch(e) {
+    toast('Fehler: ' + e.message);
+  }
+}
+
 // Close modal on Escape
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeEmailModal();
+  if (e.key === 'Escape') {
+    closeEmailModal();
+    closeSettingsModal();
+  }
 });
 
 // init

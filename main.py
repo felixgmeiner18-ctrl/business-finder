@@ -22,8 +22,10 @@ from database import (
     delete_business,
     get_business,
     get_businesses,
+    get_settings,
     init_db,
     save_contact_submission,
+    save_settings,
     update_business,
     update_site_info,
     upsert_business,
@@ -61,6 +63,13 @@ class ContactPayload(BaseModel):
     email: str
     phone: str = ""
     message: str
+
+
+class SettingsPayload(BaseModel):
+    sender_name: str = ""
+    sender_company: str = "PageBuilder"
+    sender_email: str = ""
+    sender_phone: str = ""
 
 
 def _build_generator_prompt(biz: dict) -> str:
@@ -337,6 +346,70 @@ def search_status():
     }
 
 
+CATEGORY_HOOKS = {
+    "restaurant": {
+        "benefit": "Online-Reservierungen, eine ansprechende Speisekarte und aktuelle Öffnungszeiten",
+        "stat": "Über 70 % der Gäste schauen sich ein Restaurant online an, bevor sie hingehen",
+    },
+    "cafe": {
+        "benefit": "Öffnungszeiten, eine einladende Speisekarte und Fotos Ihres Cafés",
+        "stat": "Die meisten Gäste suchen online nach Cafés in der Nähe",
+    },
+    "hairdresser": {
+        "benefit": "Online-Terminbuchung, eine aktuelle Preisliste und eine Galerie Ihrer Arbeiten",
+        "stat": "Über 60 % der Kunden buchen Friseur-Termine heute online",
+    },
+    "beauty": {
+        "benefit": "Online-Terminbuchung, eine Vorher-Nachher-Galerie und Ihre Behandlungsübersicht",
+        "stat": "Die meisten Neukunden suchen Beauty-Salons zuerst im Internet",
+    },
+    "dentist": {
+        "benefit": "Online-Terminanfragen, Informationen zu Leistungen und ein vertrauenswürdiger erster Eindruck",
+        "stat": "9 von 10 Patienten suchen ihren Zahnarzt über Google",
+    },
+    "doctors": {
+        "benefit": "Online-Terminanfragen, aktuelle Sprechzeiten und Informationen zu Ihren Leistungen",
+        "stat": "Die Mehrheit der Patienten informiert sich online, bevor sie eine Praxis aufsucht",
+    },
+    "hotel": {
+        "benefit": "Direktbuchungen ohne Provision — das spart Ihnen 15–20 % gegenüber Booking-Portalen",
+        "stat": "Viele Gäste buchen lieber direkt, wenn eine gute Website vorhanden ist",
+    },
+    "car_repair": {
+        "benefit": "Online-Terminvereinbarung, Kundenbewertungen und eine Übersicht Ihrer Leistungen",
+        "stat": "Die meisten Autofahrer suchen ihre Werkstatt heute online",
+    },
+    "bakery": {
+        "benefit": "eine Produktübersicht, Bestellmöglichkeit und Ihre Öffnungszeiten",
+        "stat": "Kunden erwarten auch von lokalen Bäckereien eine Online-Präsenz",
+    },
+    "florist": {
+        "benefit": "Online-Bestellung, Lieferservice-Infos und eine Galerie Ihrer Arrangements",
+        "stat": "Ein Großteil der Blumenbestellungen beginnt heute mit einer Google-Suche",
+    },
+    "electrician": {
+        "benefit": "Notdienst-Kontaktmöglichkeit, Referenzen und eine Übersicht Ihrer Leistungen",
+        "stat": "Im Notfall suchen Kunden zuerst online nach einem Elektriker in der Nähe",
+    },
+    "plumber": {
+        "benefit": "Notdienst-Kontaktmöglichkeit, Referenzen und eine Übersicht Ihrer Leistungen",
+        "stat": "Im Notfall suchen Kunden zuerst online nach einem Installateur in der Nähe",
+    },
+    "pharmacy": {
+        "benefit": "Notdienst-Zeiten, Vorbestellmöglichkeit und aktuelle Informationen",
+        "stat": "Immer mehr Kunden prüfen Apotheken-Angebote und Notdienste online",
+    },
+    "optician": {
+        "benefit": "Online-Terminvereinbarung, eine Brillen-Galerie und Ihre Leistungsübersicht",
+        "stat": "Viele Kunden vergleichen Optiker online, bevor sie sich entscheiden",
+    },
+}
+_DEFAULT_HOOK = {
+    "benefit": "aktuelle Informationen, Kontaktmöglichkeiten und einen professionellen ersten Eindruck",
+    "stat": "Über 80 % der Kunden informieren sich heute online, bevor sie ein Geschäft aufsuchen",
+}
+
+
 @app.get("/businesses/{business_id}/draft-email")
 def draft_email(business_id: int):
     """Generate a personalized cold email for a business."""
@@ -360,22 +433,52 @@ def draft_email(business_id: int):
     }
     cat_label = cat_labels.get(category.lower(), category.capitalize())
 
-    subject = f"Website für {name} in {region}?" if region else f"Website für {name}?"
+    hook = CATEGORY_HOOKS.get(category.lower(), _DEFAULT_HOOK)
+
+    subject = f"Mehr Kunden für {name} in {region}? So geht's." if region else f"Mehr Kunden für {name}? So geht's."
+
+    # Build signature from settings
+    settings = get_settings()
+    sig_lines = []
+    if settings.get("sender_name"):
+        sig_lines.append(settings["sender_name"])
+    if settings.get("sender_company"):
+        sig_lines.append(f"{settings['sender_company']} — Webentwicklung")
+    if settings.get("sender_email"):
+        sig_lines.append(settings["sender_email"])
+    if settings.get("sender_phone"):
+        sig_lines.append(settings["sender_phone"])
+    signature = "\n".join(sig_lines)
 
     body = (
         f"Guten Tag,\n\n"
-        f"ich bin auf Ihr Geschäft \"{name}\" aufmerksam geworden und habe gesehen, "
-        f"dass Sie derzeit keine eigene Website haben.\n\n"
-        f"Viele Kunden suchen heute online nach {cat_label}"
-        + (f" in {region}" if region else "")
-        + f" — ohne Website gehen Ihnen potenzielle Kunden verloren.\n\n"
-        f"Ich erstelle professionelle Websites speziell für {cat_label} und würde Ihnen "
-        f"gerne zeigen, wie Ihre Online-Präsenz aussehen könnte.\n\n"
-        f"Darf ich Ihnen ein unverbindliches Beispiel zusenden?\n\n"
+        f"ich habe nach {cat_label} in {region} gesucht und bin dabei auf "
+        f"\"{name}\" gestoßen — allerdings ohne eigene Website.\n\n"
+        f"{hook['stat']}. Ohne Website sind Sie für "
+        f"diese Kunden praktisch unsichtbar.\n\n"
+        f"Dabei könnte eine professionelle Website für Sie so viel leisten: "
+        f"{hook['benefit']}.\n\n"
+        f"Ich habe bereits eine Beispiel-Website speziell für Ihr Geschäft "
+        f"vorbereitet, damit Sie sehen können, wie Ihr Auftritt aussehen könnte.\n\n"
+        f"Soll ich Ihnen diese kostenlos und unverbindlich zusenden?\n\n"
         f"Mit freundlichen Grüßen"
     )
 
+    if signature:
+        body += f"\n\n{signature}"
+
     return {"subject": subject, "body": body, "email": email}
+
+
+@app.get("/api/settings")
+def read_settings():
+    return get_settings()
+
+
+@app.put("/api/settings")
+def write_settings(payload: SettingsPayload):
+    save_settings(payload.model_dump())
+    return {"ok": True}
 
 
 @app.patch("/businesses/{business_id}")
