@@ -1,0 +1,2 @@
+Keep my Live Structured achieve my goals step by step
+Goals: Hit 5k income a month get away from my phone in my free time and use it wisely. keep up in school with lowest effort possible. Get a way to keep all my projects at one location and always keep track of them. 

@@ -1,0 +1,288 @@
+--- business-finder.orig/scraper.py	2026-04-23 08:38:39.961215100 +0000
++++ business-finder/scraper.py	2026-04-23 08:39:03.905215100 +0000
+@@ -8,6 +8,7 @@
+     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+ ]
+ 
++# Broad query: any business with phone but no website (original behaviour).
+ QUERY_TEMPLATE = """
+ [out:json][timeout:60];
+ area[name="{region}"]->.searchArea;
+@@ -17,12 +18,51 @@
+ out body;
+ """
+ 
++# OSM craft tags we consider "trades" (DACH Handwerker) for the Automatic Webside Seller pipeline.
++# Source: OpenStreetMap Wiki — Key:craft. See https://wiki.openstreetmap.org/wiki/Key:craft
++TRADES_CRAFT_TAGS = [
++    "electrician",
++    "plumber",
++    "hvac",
++    "heating_engineer",
++    "carpenter",
++    "painter",
++    "roofer",
++    "tiler",
++    "glazier",
++    "locksmith",
++    "metal_construction",
++    "gasfitter",
++    "stonemason",
++    "plasterer",
++    "floorer",
++    "handyman",
++]
++
++# Trades-only query: filter at Overpass level by craft tag. Smaller payload, cleaner data.
++TRADES_QUERY_TEMPLATE = """
++[out:json][timeout:60];
++area[name="{region}"]->.searchArea;
++(
++  nwr["craft"~"^({craft_regex})$"]["name"][!"website"][!"contact:website"][!"url"][!"contact:url"][!"website:en"][!"website:de"][!"website:mobile"](area.searchArea);
++);
++out body;
++"""
++
+ WEBSITE_TAGS = {
+     "website", "contact:website", "url", "contact:url",
+     "website:en", "website:de", "website:mobile",
+ }
+ 
+ 
++def _build_query(region: str, niche: str | None = None) -> str:
++    """Build an Overpass QL query for a region. If niche='trades', filter to trades craft tags."""
++    if niche == "trades":
++        craft_regex = "|".join(TRADES_CRAFT_TAGS)
++        return TRADES_QUERY_TEMPLATE.format(region=region, craft_regex=craft_regex)
++    return QUERY_TEMPLATE.format(region=region)
++
++
+ def _parse_tags(element: dict) -> dict:
+     tags = element.get("tags", {})
+     name = tags.get("name", "Unknown")
+@@ -31,22 +71,41 @@
+     city = tags.get("addr:city", "")
+     street = tags.get("addr:street", "")
+     housenumber = tags.get("addr:housenumber", "")
++    postcode = (
++        tags.get("addr:postcode")
++        or tags.get("addr:postalcode")
++        or tags.get("contact:postalcode", "")
++    )
+     address = " ".join(filter(None, [street, housenumber, city])) or "N/A"
+     category = (
+-        tags.get("shop")
++        tags.get("craft")
++        or tags.get("shop")
+         or tags.get("amenity")
+-        or tags.get("craft")
+         or tags.get("office")
+         or "other"
+     )
+     has_website = any(tags.get(t) for t in WEBSITE_TAGS)
+-    return {"name": name, "phone": phone, "email": email, "address": address, "category": category, "has_website": has_website}
+-
+-
+-def search_businesses(region: str) -> list[dict]:
+-    """Query Overpass for businesses with phone but no website in the given region."""
+-    query = QUERY_TEMPLATE.format(region=region)
++    return {
++        "name": name,
++        "phone": phone,
++        "email": email,
++        "address": address,
++        "postcode": postcode,
++        "category": category,
++        "has_website": has_website,
++    }
++
++
++def search_businesses(region: str, niche: str | None = None) -> list[dict]:
++    """Query Overpass for businesses with no website in the given region.
++
++    niche=None     → broad search: any business with phone, no website (original behaviour).
++    niche='trades' → trades-only: craft tag must be in TRADES_CRAFT_TAGS. Phone optional
++                     (postal mail is primary channel, so we don't drop leads lacking phone).
++    """
++    query = _build_query(region, niche)
+     last_error = None
++    resp = None
+     for endpoint in OVERPASS_ENDPOINTS:
+         try:
+             with warnings.catch_warnings():
+@@ -70,9 +129,13 @@
+     seen = set()
+     for el in elements:
+         parsed = _parse_tags(el)
+-        if not parsed["phone"] or parsed["has_website"]:
++        # For broad search, require phone and drop anything that slipped through with a website.
++        # For trades, phone is optional — postal mail is the primary channel.
++        if parsed["has_website"]:
++            continue
++        if niche != "trades" and not parsed["phone"]:
+             continue
+-        key = (parsed["name"], parsed["phone"])
++        key = (parsed["name"], parsed["phone"], parsed["address"])
+         if key in seen:
+             continue
+         seen.add(key)
+--- business-finder.orig/database.py	2026-04-23 08:38:39.961215100 +0000
++++ business-finder/database.py	2026-04-23 08:39:24.459215100 +0000
+@@ -41,17 +41,18 @@
+     with get_conn() as conn:
+         conn.execute("""
+             CREATE TABLE IF NOT EXISTS businesses (
+-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+-                name      TEXT NOT NULL,
+-                phone     TEXT NOT NULL,
+-                email     TEXT DEFAULT '',
+-                address   TEXT,
+-                category  TEXT,
+-                region    TEXT,
+-                status    TEXT DEFAULT 'New',
+-                notes     TEXT DEFAULT '',
+-                found_at  TEXT,
+-                follow_up TEXT,
++                id          INTEGER PRIMARY KEY AUTOINCREMENT,
++                name        TEXT NOT NULL,
++                phone       TEXT DEFAULT '',
++                email       TEXT DEFAULT '',
++                address     TEXT,
++                postal_code TEXT DEFAULT '',
++                category    TEXT,
++                region      TEXT,
++                status      TEXT DEFAULT 'New',
++                notes       TEXT DEFAULT '',
++                found_at    TEXT,
++                follow_up   TEXT,
+                 website_url TEXT
+             )
+         """)
+@@ -70,6 +71,8 @@
+             conn.execute("ALTER TABLE businesses ADD COLUMN site_variation INTEGER")
+         if "site_sections" not in columns:
+             conn.execute("ALTER TABLE businesses ADD COLUMN site_sections TEXT")
++        if "postal_code" not in columns:
++            conn.execute("ALTER TABLE businesses ADD COLUMN postal_code TEXT DEFAULT ''")
+ 
+         # Indices for fast filtering + sorting
+         conn.execute("CREATE INDEX IF NOT EXISTS idx_status   ON businesses(status)")
+@@ -99,18 +102,25 @@
+         conn.commit()
+ 
+ 
+-def upsert_business(name, phone, address, category, region, email=""):
+-    """Insert if not already present (match on name+phone)."""
++def upsert_business(name, phone, address, category, region, email="", postal_code=""):
++    """Insert if not already present. Match on (name, phone) when phone is set,
++    else on (name, postal_code, address) to avoid duplicates from trades that lack a phone."""
+     with get_conn() as conn:
+-        existing = conn.execute(
+-            "SELECT id FROM businesses WHERE name=? AND phone=?", (name, phone)
+-        ).fetchone()
++        if phone:
++            existing = conn.execute(
++                "SELECT id FROM businesses WHERE name=? AND phone=?", (name, phone)
++            ).fetchone()
++        else:
++            existing = conn.execute(
++                "SELECT id FROM businesses WHERE name=? AND postal_code=? AND address=?",
++                (name, postal_code, address),
++            ).fetchone()
+         if existing:
+             return False
+         conn.execute(
+-            """INSERT INTO businesses (name, phone, email, address, category, region, status, notes, found_at)
+-               VALUES (?, ?, ?, ?, ?, ?, 'New', '', ?)""",
+-            (name, phone, email, address, category, region, datetime.utcnow().isoformat()),
++            """INSERT INTO businesses (name, phone, email, address, postal_code, category, region, status, notes, found_at)
++               VALUES (?, ?, ?, ?, ?, ?, ?, 'New', '', ?)""",
++            (name, phone, email, address, postal_code, category, region, datetime.utcnow().isoformat()),
+         )
+         conn.commit()
+         return True
+--- business-finder.orig/main.py	2026-04-23 08:38:39.961215100 +0000
++++ business-finder/main.py	2026-04-23 08:39:44.012215100 +0000
+@@ -41,10 +41,12 @@
+ 
+ class SearchPayload(BaseModel):
+     region: str
++    niche: str | None = None  # None = broad search, "trades" = trades-only (craft filter)
+ 
+ 
+ class QueuePayload(BaseModel):
+     regions: list[str]
++    niche: str | None = None
+ 
+ 
+ class GeneratePayload(BaseModel):
+@@ -174,16 +176,20 @@
+ }
+ 
+ 
+-def run_search(region: str):
++def run_search(region: str, niche: str | None = None):
+     _search_state["searching"] = True
+     _search_state["region"] = region
+     try:
+-        businesses = search_businesses(region)
++        businesses = search_businesses(region, niche=niche)
+         count = 0
+         for b in businesses:
+-            if upsert_business(b["name"], b["phone"], b["address"], b["category"], region, b.get("email", "")):
++            if upsert_business(
++                b["name"], b["phone"], b["address"], b["category"], region,
++                email=b.get("email", ""), postal_code=b.get("postcode", ""),
++            ):
+                 count += 1
+-        print(f"[search] {region}: {len(businesses)} found, {count} new")
++        niche_tag = f" niche={niche}" if niche else ""
++        print(f"[search] {region}{niche_tag}: {len(businesses)} found, {count} new")
+     except RuntimeError as e:
+         print(f"[search] error: {e}")
+     finally:
+@@ -191,13 +197,13 @@
+         _search_state["region"] = ""
+ 
+ 
+-def run_queue(regions: list[str]):
++def run_queue(regions: list[str], niche: str | None = None):
+     """Process multiple regions sequentially."""
+     _search_state["queue"] = list(regions)
+     _search_state["queue_total"] = len(regions)
+     _search_state["queue_done"] = 0
+     for region in regions:
+-        run_search(region)
++        run_search(region, niche=niche)
+         _search_state["queue_done"] += 1
+     _search_state["queue"] = []
+     _search_state["queue_total"] = 0
+@@ -319,9 +325,14 @@
+ def trigger_search(payload: SearchPayload):
+     if not payload.region.strip():
+         raise HTTPException(400, "Region cannot be empty")
+-    thread = threading.Thread(target=run_search, args=(payload.region.strip(),), daemon=True)
++    thread = threading.Thread(
++        target=run_search,
++        args=(payload.region.strip(), payload.niche),
++        daemon=True,
++    )
+     thread.start()
+-    return {"message": f"Search started for '{payload.region}'"}
++    niche_tag = f" (niche={payload.niche})" if payload.niche else ""
++    return {"message": f"Search started for '{payload.region}'{niche_tag}"}
+ 
+ 
+ @app.post("/search/queue")
+@@ -331,9 +342,9 @@
+         raise HTTPException(400, "No valid regions provided")
+     if _search_state["searching"]:
+         raise HTTPException(409, "A search is already running")
+-    thread = threading.Thread(target=run_queue, args=(regions,), daemon=True)
++    thread = threading.Thread(target=run_queue, args=(regions, payload.niche), daemon=True)
+     thread.start()
+-    return {"message": f"Queue started: {len(regions)} regions", "regions": regions}
++    return {"message": f"Queue started: {len(regions)} regions", "regions": regions, "niche": payload.niche}
+ 
+ 
+ @app.get("/search/status")
