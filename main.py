@@ -41,10 +41,12 @@ class UpdatePayload(BaseModel):
 
 class SearchPayload(BaseModel):
     region: str
+    niche: str | None = None  # None = broad search, "trades" = trades-only (craft filter)
 
 
 class QueuePayload(BaseModel):
     regions: list[str]
+    niche: str | None = None
 
 
 class GeneratePayload(BaseModel):
@@ -174,16 +176,20 @@ DIRECTORY_DOMAINS = {
 }
 
 
-def run_search(region: str):
+def run_search(region: str, niche: str | None = None):
     _search_state["searching"] = True
     _search_state["region"] = region
     try:
-        businesses = search_businesses(region)
+        businesses = search_businesses(region, niche=niche)
         count = 0
         for b in businesses:
-            if upsert_business(b["name"], b["phone"], b["address"], b["category"], region, b.get("email", "")):
+            if upsert_business(
+                b["name"], b["phone"], b["address"], b["category"], region,
+                email=b.get("email", ""), postal_code=b.get("postcode", ""),
+            ):
                 count += 1
-        print(f"[search] {region}: {len(businesses)} found, {count} new")
+        niche_tag = f" niche={niche}" if niche else ""
+        print(f"[search] {region}{niche_tag}: {len(businesses)} found, {count} new")
     except RuntimeError as e:
         print(f"[search] error: {e}")
     finally:
@@ -191,13 +197,13 @@ def run_search(region: str):
         _search_state["region"] = ""
 
 
-def run_queue(regions: list[str]):
+def run_queue(regions: list[str], niche: str | None = None):
     """Process multiple regions sequentially."""
     _search_state["queue"] = list(regions)
     _search_state["queue_total"] = len(regions)
     _search_state["queue_done"] = 0
     for region in regions:
-        run_search(region)
+        run_search(region, niche=niche)
         _search_state["queue_done"] += 1
     _search_state["queue"] = []
     _search_state["queue_total"] = 0
@@ -319,9 +325,14 @@ def list_businesses(
 def trigger_search(payload: SearchPayload):
     if not payload.region.strip():
         raise HTTPException(400, "Region cannot be empty")
-    thread = threading.Thread(target=run_search, args=(payload.region.strip(),), daemon=True)
+    thread = threading.Thread(
+        target=run_search,
+        args=(payload.region.strip(), payload.niche),
+        daemon=True,
+    )
     thread.start()
-    return {"message": f"Search started for '{payload.region}'"}
+    niche_tag = f" (niche={payload.niche})" if payload.niche else ""
+    return {"message": f"Search started for '{payload.region}'{niche_tag}"}
 
 
 @app.post("/search/queue")
@@ -331,9 +342,9 @@ def trigger_queue(payload: QueuePayload):
         raise HTTPException(400, "No valid regions provided")
     if _search_state["searching"]:
         raise HTTPException(409, "A search is already running")
-    thread = threading.Thread(target=run_queue, args=(regions,), daemon=True)
+    thread = threading.Thread(target=run_queue, args=(regions, payload.niche), daemon=True)
     thread.start()
-    return {"message": f"Queue started: {len(regions)} regions", "regions": regions}
+    return {"message": f"Queue started: {len(regions)} regions", "regions": regions, "niche": payload.niche}
 
 
 @app.get("/search/status")

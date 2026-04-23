@@ -41,17 +41,18 @@ def init_db():
     with get_conn() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS businesses (
-                id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                name      TEXT NOT NULL,
-                phone     TEXT NOT NULL,
-                email     TEXT DEFAULT '',
-                address   TEXT,
-                category  TEXT,
-                region    TEXT,
-                status    TEXT DEFAULT 'New',
-                notes     TEXT DEFAULT '',
-                found_at  TEXT,
-                follow_up TEXT,
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        TEXT NOT NULL,
+                phone       TEXT DEFAULT '',
+                email       TEXT DEFAULT '',
+                address     TEXT,
+                postal_code TEXT DEFAULT '',
+                category    TEXT,
+                region      TEXT,
+                status      TEXT DEFAULT 'New',
+                notes       TEXT DEFAULT '',
+                found_at    TEXT,
+                follow_up   TEXT,
                 website_url TEXT
             )
         """)
@@ -70,6 +71,8 @@ def init_db():
             conn.execute("ALTER TABLE businesses ADD COLUMN site_variation INTEGER")
         if "site_sections" not in columns:
             conn.execute("ALTER TABLE businesses ADD COLUMN site_sections TEXT")
+        if "postal_code" not in columns:
+            conn.execute("ALTER TABLE businesses ADD COLUMN postal_code TEXT DEFAULT ''")
 
         # Indices for fast filtering + sorting
         conn.execute("CREATE INDEX IF NOT EXISTS idx_status   ON businesses(status)")
@@ -99,18 +102,25 @@ def init_db():
         conn.commit()
 
 
-def upsert_business(name, phone, address, category, region, email=""):
-    """Insert if not already present (match on name+phone)."""
+def upsert_business(name, phone, address, category, region, email="", postal_code=""):
+    """Insert if not already present. Match on (name, phone) when phone is set,
+    else on (name, postal_code, address) to avoid duplicates from trades that lack a phone."""
     with get_conn() as conn:
-        existing = conn.execute(
-            "SELECT id FROM businesses WHERE name=? AND phone=?", (name, phone)
-        ).fetchone()
+        if phone:
+            existing = conn.execute(
+                "SELECT id FROM businesses WHERE name=? AND phone=?", (name, phone)
+            ).fetchone()
+        else:
+            existing = conn.execute(
+                "SELECT id FROM businesses WHERE name=? AND postal_code=? AND address=?",
+                (name, postal_code, address),
+            ).fetchone()
         if existing:
             return False
         conn.execute(
-            """INSERT INTO businesses (name, phone, email, address, category, region, status, notes, found_at)
-               VALUES (?, ?, ?, ?, ?, ?, 'New', '', ?)""",
-            (name, phone, email, address, category, region, datetime.utcnow().isoformat()),
+            """INSERT INTO businesses (name, phone, email, address, postal_code, category, region, status, notes, found_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'New', '', ?)""",
+            (name, phone, email, address, postal_code, category, region, datetime.utcnow().isoformat()),
         )
         conn.commit()
         return True
