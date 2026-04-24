@@ -18,9 +18,23 @@ PRIORITY_MAP = {
     "car_repair": 3, "electrician": 3, "plumber": 3, "carpenter": 3,
     "painter": 3, "roofer": 3, "hvac": 3, "locksmith": 3, "tailor": 3,
     "shoemaker": 3, "glazier": 3, "gardener": 3, "cleaner": 3,
+    # 3 = Medium (trades niche additions, 2026-04-23 letter-pipeline patch)
+    "heating_engineer": 3, "metal_construction": 3, "tiler": 3,
+    "stonemason": 3, "plasterer": 3, "floorer": 3, "handyman": 3,
+    "gasfitter": 3,
     # 2 = Low (retail — often chains or low margin)
     "convenience": 2, "clothes": 2, "supermarket": 2, "kiosk": 2,
     "newsagent": 2, "tobacco": 2, "beverages": 2,
+}
+
+# Valid letter statuses — any transition is validated server-side.
+LETTER_STATUS_VALUES = {
+    "pending_review",  # generated, awaiting Felix's approval
+    "approved",        # Felix approved, ready for send script
+    "sent",            # submitted to Letterxpress, transaction_id recorded
+    "delivered",       # Letterxpress confirmed delivery (optional / future)
+    "rejected",        # Felix rejected; reason logged; row kept for audit
+    "failed",          # Letterxpress rejected submission (API error)
 }
 
 
@@ -73,12 +87,33 @@ def init_db():
             conn.execute("ALTER TABLE businesses ADD COLUMN site_sections TEXT")
         if "postal_code" not in columns:
             conn.execute("ALTER TABLE businesses ADD COLUMN postal_code TEXT DEFAULT ''")
-
         # Indices for fast filtering + sorting
         conn.execute("CREATE INDEX IF NOT EXISTS idx_status   ON businesses(status)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_region   ON businesses(region)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_category ON businesses(category)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_found_at ON businesses(found_at DESC)")
+
+        # ─── letters table (2026-04-23 letter-pipeline patch) ───
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS letters (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                business_id       INTEGER NOT NULL,
+                tracking_code     TEXT NOT NULL UNIQUE,
+                template_version  TEXT NOT NULL,
+                status            TEXT NOT NULL DEFAULT 'pending_review',
+                pdf_bytes         BLOB,
+                generated_at      TEXT NOT NULL,
+                approved_at       TEXT,
+                sent_at           TEXT,
+                delivered_at      TEXT,
+                transaction_id    TEXT,
+                rejection_reason  TEXT,
+                FOREIGN KEY (business_id) REFERENCES businesses(id)
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_letters_status        ON letters(status)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_letters_business_id   ON letters(business_id)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_letters_generated_at  ON letters(generated_at DESC)")
 
         # Settings table for configurable signature etc.
         conn.execute("""
@@ -87,7 +122,6 @@ def init_db():
                 value TEXT NOT NULL
             )
         """)
-
         # Contact submissions table for agency website
         conn.execute("""
             CREATE TABLE IF NOT EXISTS contact_submissions (
@@ -138,14 +172,12 @@ def get_businesses(status=None, region=None, category=None, limit=500, offset=0)
     if category:
         base += " AND category LIKE ?"
         params.append(f"%{category}%")
-
     with get_conn() as conn:
         total = conn.execute(f"SELECT COUNT(*) {base}", params).fetchone()[0]
         rows = conn.execute(
             f"SELECT * {base} ORDER BY found_at DESC LIMIT ? OFFSET ?",
             params + [limit, offset],
         ).fetchall()
-
     results = []
     for r in rows:
         d = dict(r)
@@ -248,3 +280,139 @@ def get_contact_submissions():
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM contact_submissions ORDER BY created_at DESC").fetchall()
     return [dict(r) for r in rows]
+
+
+# ─────────────────────────────────────────────────────────────────
+# Letters pipeline (2026-04-23 letter-pipeline patch)
+# ─────────────────────────────────────────────────────────────────
+
+# Metadata-only column list (excludes pdf_bytes BLOB for fast list queries)
+_LETTER_META_COLS = (
+    "id, business_id, tracking_code, template_version, status, "
+    "generated_at, approved_at, sent_at, delivered_at, "
+    "transaction_id, rejection_reason"
+)
+
+
+def create_letter(business_id: int, tracking_code: str, template_version: str, pdf_bytes: bytes) -> int:
+    """Create a new letter row for a business. Returns letter_id.
+
+    Initial status is 'pending_review' — requires explicit approve_letter() before send.
+    tracking_code must be globally unique (UNIQUE constraint enforced at DB).
+    """
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """INSERT INTO letters
+                 (business_id, tracking_code, template_version, pdf_bytes, generated_at, status)
+               VALUES (?, ?, ?, ?, ?, 'pending_review')""",
+            (business_id, tracking_code, template_version, pdf_bytes, datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+
+def get_letters(status: str = None, business_id: int = None) -> list[dict]:
+    """List letters (metadata only — no PDF bytes). Filter by status and/or business_id."""
+    query = f"SELECT {_LETTER_META_COLS} FROM letters WHERE 1=1"
+    params = []
+    if status:
+        query += " AND status=?"
+        params.append(status)
+    if business_id is not None:
+        query += " AND business_id=?"
+        params.append(business_id)
+    query += " ORDER BY generated_at DESC"
+    with get_conn() as conn:
+        rows = conn.execute(query, params).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_letter(letter_id: int) -> dict | None:
+    """Fetch a single letter's metadata (no PDF bytes)."""
+    with get_conn() as conn:
+        row = conn.execute(
+            f"SELECT {_LETTER_META_COLS} FROM letters WHERE id=?", (letter_id,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def get_letter_by_tracking_code(tracking_code: str) -> dict | None:
+    """Lookup letter by its tracking code (e.g. 'VB01')."""
+    with get_conn() as conn:
+        row = conn.execute(
+            f"SELECT {_LETTER_META_COLS} FROM letters WHERE tracking_code=?", (tracking_code,),
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def get_letter_pdf(letter_id: int) -> bytes | None:
+    """Fetch the stored PDF bytes for a letter. Separate from metadata to keep list queries cheap."""
+    with get_conn() as conn:
+        row = conn.execute("SELECT pdf_bytes FROM letters WHERE id=?", (letter_id,)).fetchone()
+    return row["pdf_bytes"] if row else None
+
+
+def approve_letter(letter_id: int) -> bool:
+    """Approve a pending_review letter. Idempotent-ish: no-op if already approved.
+    Returns True if transition happened, False if letter wasn't in pending_review."""
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """UPDATE letters
+                 SET status='approved', approved_at=?
+               WHERE id=? AND status='pending_review'""",
+            (datetime.utcnow().isoformat(), letter_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def reject_letter(letter_id: int, reason: str) -> bool:
+    """Reject a pending_review letter. Keeps row for audit; regeneration creates a new letter row."""
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """UPDATE letters
+                 SET status='rejected', rejection_reason=?
+               WHERE id=? AND status='pending_review'""",
+            (reason, letter_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def mark_letter_sent(letter_id: int, transaction_id: str) -> bool:
+    """Mark an approved letter as submitted to the print-API. Records transaction_id."""
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """UPDATE letters
+                 SET status='sent', sent_at=?, transaction_id=?
+               WHERE id=? AND status='approved'""",
+            (datetime.utcnow().isoformat(), transaction_id, letter_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def mark_letter_failed(letter_id: int, reason: str) -> bool:
+    """Mark a send attempt as failed (e.g. Letterxpress API returned error)."""
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """UPDATE letters
+                 SET status='failed', rejection_reason=?
+               WHERE id=? AND status IN ('approved','pending_review')""",
+            (reason, letter_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+
+
+def mark_letter_delivered(letter_id: int) -> bool:
+    """Mark a sent letter as delivered (Letterxpress delivery confirmation, optional)."""
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """UPDATE letters
+                 SET status='delivered', delivered_at=?
+               WHERE id=? AND status='sent'""",
+            (datetime.utcnow().isoformat(), letter_id),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
