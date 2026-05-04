@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Website-Anfrage · Felix Gmeiner</title>
+    <meta name="description" content="Website-Anfrage für Handwerksbetriebe in Vorarlberg. Festpreis 590 Euro, fertig in 72 Stunden.">
+    <meta name="robots" content="noindex">
+    <style>
+        :root {
+            --ink: #1a1a1a;
+            --ink-soft: #555;
+            --bg: #fafaf7;
+            --accent: #1a4d2e;
+            --accent-dark: #133b22;
+            --paper: #ffffff;
+            --line: #e5e2d8;
+            --highlight: #f7f5ee;
+            --highlight-line: #8b7d4a;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+            font-family: "Georgia", "Garamond", serif;
+            font-size: 17px;
+            line-height: 1.55;
+            color: var(--ink);
+            background: var(--bg);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .page {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+
+        .topline {
+            font-size: 13px;
+            color: var(--ink-soft);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 32px;
+            line-height: 1.15;
+            margin: 0 0 24px;
+            font-weight: 600;
+        }
+
+        .intro {
+            background: var(--highlight);
+            border-left: 3px solid var(--highlight-line);
+            padding: 16px 18px;
+            margin: 0 0 28px;
+            font-size: 16px;
+        }
+
+        .intro strong.code {
+            font-family: "Courier New", monospace;
+            font-size: 18px;
+            background: var(--paper);
+            padding: 1px 6px;
+            border-radius: 3px;
+            border: 1px solid var(--line);
+        }
+
+        .intro p { margin: 0; }
+        .intro p + p { margin-top: 8px; }
+
+        form {
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 24px 22px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--ink);
+        }
+        label:first-of-type { margin-top: 0; }
+        label .opt { font-weight: 400; color: var(--ink-soft); font-size: 13px; }
+
+        input, textarea {
+            width: 100%;
+            padding: 11px 12px;
+            font-size: 16px;
+            font-family: inherit;
+            border: 1px solid #c8c5b9;
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink);
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26,77,46,0.12);
+        }
+        textarea { resize: vertical; min-height: 90px; }
+
+        button {
+            display: block;
+            width: 100%;
+            margin-top: 22px;
+            padding: 14px 24px;
+            font-size: 17px;
+            font-family: inherit;
+            font-weight: 600;
+            color: white;
+            background: var(--accent);
+            border: 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        button:hover { background: var(--accent-dark); }
+        button:disabled { background: #999; cursor: not-allowed; }
+
+        .small {
+            font-size: 13px;
+            color: var(--ink-soft);
+            margin-top: 14px;
+            text-align: center;
+        }
+
+        .signature {
+            margin-top: 36px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+            font-size: 14px;
+            color: var(--ink-soft);
+            line-height: 1.6;
+        }
+        .signature strong { color: var(--ink); }
+        .signature a { color: var(--ink-soft); }
+
+        .result {
+            display: none;
+            padding: 20px 22px;
+            border-radius: 6px;
+            margin: 0;
+        }
+        .result.success {
+            display: block;
+            background: #e8f3eb;
+            border: 1px solid #a8cdb3;
+            color: #133b22;
+        }
+        .result.error {
+            display: block;
+            background: #fbe7e7;
+            border: 1px solid #e0aaaa;
+            color: #802020;
+        }
+        .result h2 { margin: 0 0 8px; font-size: 22px; }
+        .result p { margin: 0; }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 26px; }
+            .page { padding: 24px 16px 40px; }
+            form { padding: 20px 16px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="page">
+        <p class="topline">Website-Anfrage</p>
+        <h1>Eine Website für Ihren Betrieb.</h1>
+
+        <div class="intro">
+            <p>Sie haben einen Brief mit dem Code <strong class="code" id="code">—</strong> erhalten.</p>
+            <p>Tragen Sie unten Firma, Telefon und ein paar Sätze zu Ihrem Betrieb ein. Innerhalb von 24 Stunden melde ich mich mit einem ersten Entwurf zurück. Unverbindlich, ohne versteckte Kosten, ohne Vertrag.</p>
+        </div>
+
+        <form id="anfrage-form">
+            <label for="firma">Firma</label>
+            <input type="text" id="firma" name="firma" required autocomplete="organization">
+
+            <label for="name">Ihr Name</label>
+            <input type="text" id="name" name="name" required autocomplete="name">
+
+            <label for="telefon">Telefonnummer</label>
+            <input type="tel" id="telefon" name="telefon" required autocomplete="tel" placeholder="z.B. 0664 1234567">
+
+            <label for="beschreibung">Was machen Sie? <span class="opt">(zwei Sätze reichen)</span></label>
+            <textarea id="beschreibung" name="beschreibung" rows="3" required placeholder="z.B. Tischlerei seit 1995 in Dornbirn, Schwerpunkt Massivholzmöbel und Innenausbau."></textarea>
+
+            <button type="submit" id="submit-btn">Anfrage senden</button>
+            <p class="small">Ihre Daten werden ausschließlich zur Erstellung Ihres Website-Entwurfs verwendet.</p>
+        </form>
+
+        <div class="result" id="result"></div>
+
+        <div class="signature">
+            <strong>Felix Gmeiner</strong><br>
+            Softwareentwickler-Lehrling aus Ludesch<br>
+            Dorfstraße 41, 6713 Ludesch<br>
+            <a href="mailto:felix.gmeiner18@gmail.com">felix.gmeiner18@gmail.com</a> · <a href="tel:+436766505015">+43 676 6505015</a>
+        </div>
+    </main>
+
+    <script>
+        // Read tracking code from URL path: /VB02 → "VB02"
+        const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+        const code = /^VB\d{2}$/i.test(path) ? path.toUpperCase() : '';
+        if (code) {
+            document.getElementById('code').textContent = code;
+        } else {
+            document.getElementById('code').textContent = '(unbekannt)';
+        }
+
+        const form = document.getElementById('anfrage-form');
+        const result = document.getElementById('result');
+        const btn = document.getElementById('submit-btn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            btn.disabled = true;
+            btn.textContent = 'Wird gesendet…';
+
+            const fd = new FormData(form);
+            const message = [
+                `[Tracking: ${code || 'kein-code'}]`,
+                `Firma: ${fd.get('firma')}`,
+                `Beschreibung: ${fd.get('beschreibung')}`
+            ].join('\n');
+
+            try {
+                const r = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: fd.get('name'),
+                        email: '',          // optional now (see main.py patch)
+                        phone: fd.get('telefon'),
+                        message: message
+                    })
+                });
+
+                if (r.ok) {
+                    form.style.display = 'none';
+                    result.className = 'result success';
+                    result.innerHTML = '<h2>Vielen Dank!</h2><p>Ich melde mich innerhalb von 24 Stunden bei Ihnen — telefonisch unter der angegebenen Nummer. Bis bald.</p>';
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Anfrage senden';
+                    result.className = 'result error';
+                    result.innerHTML = '<h2>Da ist etwas schiefgelaufen.</h2><p>Versuchen Sie es bitte noch einmal — oder rufen Sie direkt an: <a href="tel:+436766505015">+43 676 6505015</a>.</p>';
+                }
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Anfrage senden';
+                result.className = 'result error';
+                result.innerHTML = '<h2>Verbindungsfehler.</h2><p>Bitte rufen Sie an: <a href="tel:+436766505015">+43 676 6505015</a>.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

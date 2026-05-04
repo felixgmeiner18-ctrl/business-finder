@@ -89,7 +89,7 @@ All 8 resolved from DB (pulled 2026-04-23). Addresses normalized from OSM `addre
 
 - [x] **Street addresses filled in** — done 2026-04-23, all 8 resolved.
 - [ ] **Print-API picked** (Pingen vs Letterxpress — Task #4)
-- [ ] **Tracking domain bought** (e.g. `website-check.at` or similar — ~€10/yr)
+- [ ] **Tracking domain bought** — `handwerkerweb.at` (picked 2026-05-03, world4you, €12 first year)
 - [ ] **Landing page live** at `{domain}/VBxx` — one form: Firma, Name, Telefon, kurze Beschreibung. Logs visit + form submit.
 - [ ] **Absender-Impressum decided** — private address in Ludesch acceptable for a single batch. Formal business form (Kleinunternehmer) only required *before first paying customer*, not before sending letters.
 - [ ] **Letter v1 reviewed** (`(C) Letter v1 — DE Trades.md` in this folder)

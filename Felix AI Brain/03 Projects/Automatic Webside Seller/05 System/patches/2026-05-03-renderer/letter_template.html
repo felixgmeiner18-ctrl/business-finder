@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Brief an {{ firma }}</title>
+    <style>
+        /* ─── DIN 5008 Form B (window envelope) ─────────────────────────────
+           A4 = 210 × 297 mm.
+           DL window envelope: address visible at top:45mm, left:20mm, 85×45mm.
+
+           Architecture:
+           - @page = A4 with no built-in margin (we control margins manually).
+           - body = the page surface itself; everything coordinates off body.
+           - Address block, date, subject = absolute-positioned (they need
+             to land at exact mm positions for the window envelope).
+           - Letter body = natural flow with padding-top to clear the
+             absolute-positioned header. Lets content auto-size; if it
+             overflows, you'll see a page 2 (signal to shorten copy).
+        */
+
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        html { margin: 0; padding: 0; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "EB Garamond", "Garamond", "Georgia", serif;
+            font-size: 11pt;
+            line-height: 1.45;
+            color: #111;
+            position: relative;   /* anchor for absolute children */
+        }
+
+        /* ─── Address block: visible through DL window envelope ─── */
+        .address-block {
+            position: absolute;
+            top: 45mm;
+            left: 20mm;
+            width: 85mm;
+            height: 45mm;
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+        .address-block .sender-line {
+            font-size: 7.5pt;
+            color: #555;
+            border-bottom: 0.4pt solid #777;
+            padding-bottom: 1mm;
+            margin-bottom: 2.5mm;
+            letter-spacing: 0.2pt;
+        }
+        .address-block .recipient {
+            font-size: 11pt;
+            line-height: 1.35;
+        }
+
+        /* ─── Date: right-aligned, just below address window ─── */
+        .date {
+            position: absolute;
+            top: 92mm;
+            right: 20mm;
+            font-size: 11pt;
+        }
+
+        /* ─── Subject ─── */
+        .subject {
+            position: absolute;
+            top: 100mm;
+            left: 25mm;
+            right: 20mm;
+            font-weight: 600;
+            font-size: 11pt;
+        }
+
+        /* ─── Body: natural flow, padded to clear absolute header ─── */
+        .body {
+            margin: 0;
+            padding: 108mm 20mm 12mm 25mm;
+            font-size: 10.5pt;
+            line-height: 1.35;
+            text-align: left;
+        }
+        .body p {
+            margin: 0 0 2mm 0;
+        }
+
+        /* ─── Tracking section (QR + URL) ─── */
+        .tracking-block {
+            margin: 2mm 0 2mm 0;
+            border: 0;
+            border-collapse: collapse;
+        }
+        .tracking-block td {
+            vertical-align: middle;
+            padding: 0;
+        }
+        .tracking-block .qr-cell {
+            width: 20mm;
+            padding-right: 4mm;
+        }
+        .tracking-block .qr-cell svg {
+            width: 20mm;
+            height: 20mm;
+            display: block;
+        }
+        .tracking-block .url-cell {
+            font-family: "Courier New", monospace;
+            font-size: 10.5pt;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        .tracking-block .url-cell .caption {
+            font-family: "EB Garamond", "Garamond", "Georgia", serif;
+            font-size: 9pt;
+            font-weight: 400;
+            color: #333;
+            margin-top: 1mm;
+            font-style: italic;
+        }
+
+        /* ─── Signature ─── */
+        .signature-gap {
+            height: 9mm;
+        }
+        .signoff { margin-top: 1mm; }
+        .name-line { margin: 0; }
+        .contact-line {
+            margin-top: 0.5mm;
+            font-size: 9.5pt;
+            color: #333;
+        }
+
+        /* ─── Optional fold marks for envelope alignment ─── */
+        .fold-mark {
+            position: absolute;
+            left: 5mm;
+            width: 4mm;
+            height: 0.3pt;
+            background: #aaa;
+        }
+        .fold-mark.first  { top: 105mm; }
+        .fold-mark.second { top: 210mm; }
+    </style>
+</head>
+<body>
+    <!-- Optional fold marks (hairlines on left margin to help fold by hand) -->
+    <div class="fold-mark first"></div>
+    <div class="fold-mark second"></div>
+
+    <!-- Address block (window envelope) -->
+    <div class="address-block">
+        <div class="sender-line">{{ absender_name }} · {{ absender_strasse }} · {{ absender_plz_ort }}</div>
+        <div class="recipient">
+            {{ firma }}<br>
+            {{ empfaenger_strasse }}<br>
+            {{ empfaenger_plz }} {{ empfaenger_ort }}
+        </div>
+    </div>
+
+    <!-- Date -->
+    <div class="date">{{ ort_absender }}, {{ datum }}</div>
+
+    <!-- Subject -->
+    <div class="subject">Eine Website für {{ firma }}</div>
+
+    <!-- Letter body (natural flow) -->
+    <div class="body">
+        <p>Sehr geehrte Damen und Herren,</p>
+
+        <p>wer heute in {{ region }} einen {{ kategorie_laie }} sucht, googelt.
+        Wer online nicht zu finden ist, wird nicht angerufen — auch wenn die
+        Arbeit besser ist als die der Konkurrenz.</p>
+
+        <p>Mir ist aufgefallen, dass {{ firma }} keine eigene Website hat.
+        Das ist der Grund für diesen Brief.</p>
+
+        <p>Ich baue Websites für Handwerksbetriebe in Vorarlberg. Festpreis
+        590 Euro für den Standardumfang — einmalig, alles inklusive. In der
+        Regel fertig in 72 Stunden, komplett auf Deutsch, auf dem Handy gut
+        lesbar, mit Ihren Leistungen, Referenzbildern und Kontaktdaten.
+        Hosting und Domain im ersten Jahr inklusive. Von Ihrer Seite brauche
+        ich nur ein kurzes Gespräch und ein paar Fotos.</p>
+
+        <p>Bei Sonderwünschen — zusätzliche Unterseiten, Online-Anfrageformular,
+        Mehrsprachigkeit — rechnen wir den Mehraufwand transparent und vorab
+        dazu. Nichts ohne Ihre Freigabe.</p>
+
+        <p>Ich bin Softwareentwickler-Lehrling aus Vorarlberg und mache das
+        nebenberuflich. Daher der Preis — ich arbeite ohne Agentur-Overhead.</p>
+
+        <p>Wenn Sie sehen möchten, wie eine Website für {{ firma }} aussehen
+        könnte, scannen Sie einfach mit dem Smartphone den QR-Code — oder
+        tippen Sie die Adresse ein:</p>
+
+        <table class="tracking-block">
+            <tr>
+                <td class="qr-cell">{{ tracking_qr_svg }}</td>
+                <td class="url-cell">
+                    {{ tracking_url }}
+                    <div class="caption">Code scannen → Formular ausfüllen → fertig.</div>
+                </td>
+            </tr>
+        </table>
+
+        <p>Sie tragen nur Firma, Telefonnummer und zwei Sätze zu Ihrem
+        Betrieb ein. Innerhalb von 24 Stunden melde ich mich mit einem ersten
+        Entwurf zurück. Unverbindlich, ohne versteckte Kosten, ohne Vertrag.</p>
+
+        <p class="signoff">Mit freundlichen Grüßen</p>
+
+        <div class="signature-gap"></div>
+
+        <p class="name-line">{{ absender_name }}</p>
+        <p class="contact-line">
+            {{ absender_email }}{% if absender_telefon %}  ·  {{ absender_telefon }}{% endif %}
+        </p>
+    </div>
+</body>
+</html>

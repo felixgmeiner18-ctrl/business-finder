@@ -115,7 +115,7 @@ ALTER TABLE businesses ADD COLUMN letter_template_version TEXT;
 Ordered, blocking dependencies noted.
 
 1. [Felix] Sign up Letterxpress + KYC + fund €15.
-2. [Felix] Buy tracking domain (`website-check.at` or similar — see separate doc).
+2. [Felix] Buy tracking domain (`handwerkerweb.at` — picked 2026-05-03, in cart at world4you).
 3. [Felix] Stand up minimal lander at `{domain}/VBxx` (Cloudflare Pages + form).
 4. [Felix] Confirm Absender address (full street in Ludesch).
 5. [Claude] Write `generate-letters.py`, `send-approved.py`, `approve.ps1`, `reject.ps1`.

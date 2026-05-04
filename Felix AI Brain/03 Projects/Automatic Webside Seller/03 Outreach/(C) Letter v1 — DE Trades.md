@@ -88,7 +88,7 @@ Felix Gmeiner
 | `{{FIRMA}}` | DB `name` | Tischlerei Brändle |
 | `{{REGION}}` | Static | Vorarlberg |
 | `{{KATEGORIE_LAIE}}` | Map from `category` | Tischler / Elektriker / Installateur / Maler / Schlosser |
-| `{{TRACKING_URL}}` | Domain + code | website-check.at/VB02 |
+| `{{TRACKING_URL}}` | Domain + code | handwerkerweb.at/VB02 |
 | `{{UNTERSCHRIFT}}` | PNG-Scan | — |
 
 ### `KATEGORIE_LAIE` mapping (laienverständlich, kein OSM-Jargon)
@@ -152,7 +152,7 @@ nebenberuflich. Daher der Preis — ich arbeite ohne Agentur-Overhead.
 Wenn Sie sehen möchten, wie eine Website für Tischlerei Brändle
 aussehen könnte, schauen Sie auf folgender Seite vorbei:
 
-    website-check.at/VB02
+    handwerkerweb.at/VB02
 
 Dort tragen Sie nur Firma, Telefonnummer und zwei Sätze zu Ihrem Betrieb
 ein. Innerhalb von 24 Stunden melde ich mich mit einem ersten Entwurf
@@ -178,7 +178,7 @@ felix.gmeiner18@gmail.com  |  [Telefon]
 
 ## Open items before we can mail
 
-- Buy tracking domain (`website-check.at` or similar)
+- Buy tracking domain (`handwerkerweb.at` — picked 2026-05-03, in cart at world4you)
 - Stand up a minimal landing page (Cloudflare Pages: static HTML + form → logs visits + submissions)
 - Pick print-API and upload this letter as a template
 - Resolve Absender street address (full Impressum-valid line)

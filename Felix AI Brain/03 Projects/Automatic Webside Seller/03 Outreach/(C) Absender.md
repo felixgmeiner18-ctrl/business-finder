@@ -14,7 +14,7 @@ Dorfstraße 41
 ## Contact line (bottom of letter body)
 
 - Email: felix.gmeiner18@gmail.com
-- Telefon: [TBD — add before first letter sends]
+- Telefon: +43 676 6505015 _(confirmed by Felix 2026-05-03)_
 
 ## Env vars (for generate-letters.py)
 
@@ -24,7 +24,7 @@ ABSENDER_STRASSE="Dorfstraße 41"
 ABSENDER_PLZ_ORT="6713 Ludesch"
 ABSENDER_LAND="Österreich"
 ABSENDER_EMAIL="felix.gmeiner18@gmail.com"
-ABSENDER_TELEFON=""   # fill when available
+ABSENDER_TELEFON="+43 676 6505015"
 ```
 
 ## Notes
