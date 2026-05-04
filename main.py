@@ -22,6 +22,7 @@ from database import (
     delete_business,
     get_business,
     get_businesses,
+    get_contact_submissions,
     get_settings,
     init_db,
     save_contact_submission,
@@ -553,6 +554,14 @@ async def submit_contact(payload: ContactPayload):
         raise HTTPException(400, "Telefonnummer oder E-Mail ist erforderlich")
     save_contact_submission(name, email, phone, message)
     return {"ok": True}
+
+
+@app.get("/api/contact/list")
+async def list_contact_submissions(limit: int = 100):
+    """Admin-only: list contact submissions newest-first. Used to verify
+    lander-form posts landed in the DB and to review incoming leads."""
+    rows = get_contact_submissions()
+    return {"total": len(rows), "rows": [dict(r) for r in rows[:limit]]}
 
 
 @app.get("/{code}")
