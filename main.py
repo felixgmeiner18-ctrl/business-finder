@@ -19,12 +19,20 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from database import (
+    approve_letter,
+    create_letter,
     delete_business,
     get_business,
     get_businesses,
     get_contact_submissions,
+    get_letter,
+    get_letter_pdf,
+    get_letters,
     get_settings,
     init_db,
+    mark_letter_failed,
+    mark_letter_sent,
+    reject_letter,
     save_contact_submission,
     save_settings,
     update_business,
@@ -66,6 +74,19 @@ class ContactPayload(BaseModel):
     email: str
     phone: str = ""
     message: str
+
+
+class LetterCreatePayload(BaseModel):
+    """Body for POST /api/letters/create — generate-letters.py uploads
+    a freshly-rendered PDF here and stores it for review."""
+    business_id: int
+    tracking_code: str          # e.g. "VB02" — must be unique
+    template_version: str       # e.g. "v1"
+    pdf_bytes_b64: str          # base64-encoded PDF bytes
+
+
+class LetterRejectPayload(BaseModel):
+    reason: str
 
 
 class SettingsPayload(BaseModel):
@@ -562,6 +583,90 @@ async def list_contact_submissions(limit: int = 100):
     lander-form posts landed in the DB and to review incoming leads."""
     rows = get_contact_submissions()
     return {"total": len(rows), "rows": [dict(r) for r in rows[:limit]]}
+
+
+# ─── Letter pipeline (sub-step 3) ──────────────────────────────────────────
+# generate-letters.py POSTs PDF bytes here. approve/reject/send key off these.
+
+@app.post("/api/letters/create")
+async def create_letter_endpoint(payload: LetterCreatePayload):
+    """Insert a new letter row with status='pending_review'.
+    Idempotency: tracking_code is UNIQUE in the letters table — re-submitting
+    the same code returns 409 instead of duplicating."""
+    # validate
+    if not re.match(r"^VB\d{2}$", payload.tracking_code):
+        raise HTTPException(400, "tracking_code must match ^VB\\d{2}$")
+    if not get_business(payload.business_id):
+        raise HTTPException(404, f"business_id {payload.business_id} not found")
+    try:
+        pdf_bytes = base64.b64decode(payload.pdf_bytes_b64)
+    except Exception:
+        raise HTTPException(400, "pdf_bytes_b64 is not valid base64")
+    if not pdf_bytes.startswith(b"%PDF-"):
+        raise HTTPException(400, "decoded payload is not a PDF (missing %PDF- header)")
+    if len(pdf_bytes) > 2_000_000:
+        raise HTTPException(400, f"PDF too large ({len(pdf_bytes)} bytes, max 2 MB)")
+    try:
+        letter_id = create_letter(
+            business_id=payload.business_id,
+            tracking_code=payload.tracking_code,
+            template_version=payload.template_version,
+            pdf_bytes=pdf_bytes,
+        )
+    except Exception as e:
+        # SQLite UNIQUE constraint failure → 409 Conflict
+        if "UNIQUE" in str(e):
+            raise HTTPException(409, f"tracking_code '{payload.tracking_code}' already exists")
+        raise
+    return {
+        "letter_id": letter_id,
+        "tracking_code": payload.tracking_code,
+        "status": "pending_review",
+        "pdf_bytes": len(pdf_bytes),
+    }
+
+
+@app.get("/api/letters")
+async def list_letters_endpoint(status: str | None = None, business_id: int | None = None):
+    """Admin-only: list letters newest-first, optionally filtered."""
+    rows = get_letters(status=status, business_id=business_id)
+    return {"total": len(rows), "rows": rows}
+
+
+@app.get("/api/letters/{letter_id}/pdf")
+async def get_letter_pdf_endpoint(letter_id: int):
+    """Admin-only: download a letter's PDF bytes."""
+    pdf_bytes = get_letter_pdf(letter_id)
+    if pdf_bytes is None:
+        raise HTTPException(404, f"letter {letter_id} not found")
+    meta = get_letter(letter_id)
+    code = meta["tracking_code"] if meta else f"letter-{letter_id}"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{code}.pdf"'},
+    )
+
+
+@app.post("/api/letters/{letter_id}/approve")
+async def approve_letter_endpoint(letter_id: int):
+    """Transition pending_review → approved. Required before send-approved.py
+    will ship a letter to Letterxpress."""
+    if not get_letter(letter_id):
+        raise HTTPException(404, f"letter {letter_id} not found")
+    if not approve_letter(letter_id):
+        raise HTTPException(409, "letter is not in 'pending_review' status")
+    return {"ok": True, "letter_id": letter_id, "status": "approved"}
+
+
+@app.post("/api/letters/{letter_id}/reject")
+async def reject_letter_endpoint(letter_id: int, payload: LetterRejectPayload):
+    """Transition pending_review → rejected. Reason is logged, row kept for audit."""
+    if not get_letter(letter_id):
+        raise HTTPException(404, f"letter {letter_id} not found")
+    if not reject_letter(letter_id, payload.reason):
+        raise HTTPException(409, "letter is not in 'pending_review' status")
+    return {"ok": True, "letter_id": letter_id, "status": "rejected"}
 
 
 @app.get("/{code}")

@@ -69,6 +69,9 @@ class Lead:
     ort: str              # City
     kategorie: str        # OSM key (carpenter, electrician, ...) OR override label
     code: str             # Tracking code, e.g. "VB02"
+    business_id: Optional[int] = None     # FK into businesses table (used by
+                                          # generate-letters.py to link the
+                                          # letters row to its source business)
     kategorie_laie_override: Optional[str] = None  # set when OSM category is wrong
                                                     # (e.g. VB06 Hämmerle is actually
                                                     # Elektrotechniker, OSM said locksmith)
@@ -239,15 +242,17 @@ def _slug(text: str) -> str:
 # ─── Phase 1 send-list (sub-step 2 self-test data) ──────────────────────────
 
 PHASE_1_LEADS = [
-    Lead("Benzer Schlosserei-Metallbau",            "Radetzkystraße 66", "6845", "Hohenems", "locksmith",          "VB01"),
-    Lead("Tischlerei Brändle",                       "Achstraße 45",      "6844", "Altach",   "carpenter",          "VB02"),
-    Lead("Sieghartsleitner Tischlerei & Parkettverlegung","Industriestraße 6","6832","Sulz",   "carpenter",          "VB03"),
-    Lead("Ammann Josef Haustechnik",                 "Feldgasse 15",      "6840", "Götzis",   "plumber",            "VB04"),
-    Lead("Micheluzzi",                               "Industriestraße 9", "6971", "Hard",     "painter",            "VB05"),
-    Lead("Hämmerle Elmar eh-mechatronik",            "Schwefel 91a",      "6850", "Dornbirn", "locksmith",          "VB06",
+    # business_id values come from `(C) Phase 1 Send List.md` — the manually-
+    # curated list, post Google-verifier audit. Don't change without re-checking.
+    Lead("Benzer Schlosserei-Metallbau",            "Radetzkystraße 66", "6845", "Hohenems", "locksmith",          "VB01", business_id=3454),
+    Lead("Tischlerei Brändle",                       "Achstraße 45",      "6844", "Altach",   "carpenter",          "VB02", business_id=3448),
+    Lead("Sieghartsleitner Tischlerei & Parkettverlegung","Industriestraße 6","6832","Sulz",   "carpenter",          "VB03", business_id=3446),
+    Lead("Ammann Josef Haustechnik",                 "Feldgasse 15",      "6840", "Götzis",   "plumber",            "VB04", business_id=3445),
+    Lead("Micheluzzi",                               "Industriestraße 9", "6971", "Hard",     "painter",            "VB05", business_id=3435),
+    Lead("Hämmerle Elmar eh-mechatronik",            "Schwefel 91a",      "6850", "Dornbirn", "locksmith",          "VB06", business_id=3424,
          kategorie_laie_override="Elektrotechniker"),
-    Lead("Lampl Energie- und Gebäudetechnik",        "Flurstraße 2",      "6833", "Klaus",    "plumber",            "VB07"),
-    Lead("Ladurner",                                  "Kesselstraße 27b", "6922", "Wolfurt",  "metal_construction", "VB08"),
+    Lead("Lampl Energie- und Gebäudetechnik",        "Flurstraße 2",      "6833", "Klaus",    "plumber",            "VB07", business_id=3419),
+    Lead("Ladurner",                                  "Kesselstraße 27b", "6922", "Wolfurt",  "metal_construction", "VB08", business_id=3455),
 ]
 
 
