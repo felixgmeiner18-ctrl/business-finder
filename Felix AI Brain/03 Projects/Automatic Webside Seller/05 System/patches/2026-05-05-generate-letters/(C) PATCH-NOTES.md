@@ -6,7 +6,7 @@ Wire the renderer (sub-step 2) to the `letters` table (sub-step 1 migration). Af
 
 ## Files added / changed (3)
 
-- **`main.py`** — extended, +110 lines. Imports 6 letter helpers from `database.py`. Adds 2 Pydantic models and 5 admin-only endpoints under `/api/letters/...`.
+- **`main.py`** — extended, +110 lines. Imports 6 letter helpers from `database.py`. Adds 2 Pydantic models (`LetterCreatePayload`, `LetterRejectPayload`) and 5 admin-only endpoints under `/api/letters/...`.
 - **`generate-letters.py`** — new file in repo root, ~200 lines. Local script. Renders Phase 1 PDFs, uploads them to Railway via the new endpoint, mirrors to `letters/pending/` for File Explorer review.
 - **`Felix AI Brain/.../patches/2026-05-03-renderer/render_letter.py`** — extended `Lead` dataclass with optional `business_id`. `PHASE_1_LEADS` now carries the 8 IDs from `(C) Phase 1 Send List.md`.
 
@@ -14,7 +14,7 @@ Wire the renderer (sub-step 2) to the `letters` table (sub-step 1 migration). Af
 
 ### `main.py` — 5 new endpoints
 
-All admin-only (Basic Auth). Path-routing follows the existing pattern.
+All admin-only (Basic Auth via existing middleware). Path-routing follows the existing pattern.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -31,18 +31,18 @@ The endpoints are surgical wrappers around the existing `database.py` helpers fr
 1. Reads `PHASE_1_LEADS` from `render_letter.py` (the 8 manually-curated leads).
 2. For each lead:
    1. Renders the PDF (template v1, today's date, `https://handwerkerweb.at/VB##` tracking URL).
-   2. Writes the PDF to `letters/pending/{CODE}_{slug}.pdf` for Felix to review in File Explorer.
+   2. Writes the PDF to `letters/pending/{CODE}_{slug}.pdf` for review in File Explorer.
    3. POSTs the PDF (base64) + metadata to `https://handwerkerweb.at/api/letters/create`.
 3. Prints a summary: `N uploaded, M skipped (already exists), K failed`.
 
-Idempotent: if you run it twice, the second run gets 409 Conflict from the server (UNIQUE constraint on `tracking_code`) and prints `SKIP` for each existing code. No duplicates, no clobber.
+Idempotent: running it twice gets 409 Conflict from the server (UNIQUE constraint on `tracking_code`) and prints `SKIP` for each existing code. No duplicates, no clobber.
 
 `--dry-run` renders PDFs locally without uploading. Useful for previewing without touching the DB.
 `--codes VB02,VB06` re-renders specific leads only.
 
-### `render_letter.py` — Lead.business_id
+### `render_letter.py` — `Lead.business_id`
 
-Optional field added to the `Lead` dataclass. The 8 entries in `PHASE_1_LEADS` now carry their `business_id` (from `(C) Phase 1 Send List.md`):
+Optional field added to the `Lead` dataclass. The 8 entries in `PHASE_1_LEADS` now carry their `business_id` from `(C) Phase 1 Send List.md`:
 
 ```
 VB01 → 3454   VB05 → 3435
@@ -93,11 +93,13 @@ Expected: `8 uploaded, 0 skipped, 0 failed`.
 
 ## How to deploy
 
-1. Push the 3 changed files:
+1. Push everything to GitHub (assumes `main.py`, `generate-letters.py`, `render_letter.py` are already updated):
    ```powershell
    cd C:\Users\Felix\Desktop\business-finder
-   git add main.py generate-letters.py "Felix AI Brain/03 Projects/Automatic Webside Seller/05 System/patches/2026-05-03-renderer/render_letter.py"
+   git add main.py generate-letters.py
+   git add "Felix AI Brain/03 Projects/Automatic Webside Seller/05 System/patches/2026-05-03-renderer/render_letter.py"
    git add "Felix AI Brain/03 Projects/Automatic Webside Seller/05 System/patches/2026-05-05-generate-letters/"
+   git status   # verify only the intended files are staged
    git commit -m "feat: generate-letters.py + letter API endpoints (sub-step 3/5)"
    git push
    ```
@@ -107,7 +109,7 @@ Expected: `8 uploaded, 0 skipped, 0 failed`.
    $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("admin:p3t5o1STv09bGJioKl6PJA"))
    Invoke-RestMethod -Uri "https://handwerkerweb.at/api/letters" -Headers @{Authorization="Basic $cred"}
    ```
-   Expected: `{total: 0, rows: []}` (empty until generate-letters runs).
+   Expected: `{total: 0, rows: []}` (empty until generate-letters runs for real).
 4. Run the live smoke test (see above) for VB02 first. If it lands cleanly, run the full batch.
 
 ## What this does NOT do
@@ -118,13 +120,13 @@ Expected: `8 uploaded, 0 skipped, 0 failed`.
 
 ## What comes next — sub-step 4 (approve / reject)
 
-`approve.ps1` and `reject.ps1` — small PowerShell scripts that:
-- `.\approve.ps1 -all` calls `POST /api/letters/{id}/approve` for every pending_review row.
-- `.\approve.ps1 VB01,VB02,VB04` approves only the listed codes.
-- `.\reject.ps1 VB03 -reason "street number wrong"` rejects + logs reason.
+`approve.ps1` and `reject.ps1` — small PowerShell scripts that call the new endpoints:
+- `.\approve.ps1 -all` → approves every `pending_review` row.
+- `.\approve.ps1 VB01,VB02,VB04` → approves only listed codes.
+- `.\reject.ps1 VB03 -reason "street number wrong"` → rejects with logged reason.
 
-After sub-step 4, the workflow is: render → review PDFs in File Explorer → approve or reject by code → state in Railway DB updates → ready for send-approved.py.
+After sub-step 4, the workflow is: render → review PDFs in File Explorer → approve or reject by code → state in Railway DB updates → ready for `send-approved.py`.
 
 ## Rollback
 
-`git revert HEAD && git push`. The `letters` table rows that `generate-letters.py` already inserted stay in the DB but become unreachable from the (rolled-back) endpoints. They can be left in place (audit trail) or `DELETE FROM letters WHERE tracking_code LIKE 'VB%'` cleared via a one-off shell.
+`git revert HEAD && git push`. The `letters` table rows that `generate-letters.py` already inserted stay in the DB but become unreachable from the (rolled-back) endpoints. They can be left in place (audit trail) or cleared with a one-off `DELETE FROM letters WHERE tracking_code LIKE 'VB%'`.
