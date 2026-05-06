@@ -5,3 +5,9 @@ __pycache__/
 .env
 
 letters/
+
+# Obsidian local config (per-machine)
+.obsidian/
+*.swp
+*.tmp
+

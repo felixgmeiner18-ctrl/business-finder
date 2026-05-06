@@ -38,8 +38,10 @@ from pathlib import Path
 
 # render_letter.py lives in the renderer patch folder. Add it to sys.path so
 # this script works when run from the repo root.
+# Repo root and the Obsidian vault are the same folder in this layout
+# (`Felix AI Brain/Felix AI Brain/`), so no extra "Felix AI Brain/" prefix.
 _REPO_ROOT = Path(__file__).resolve().parent
-_RENDERER_DIR = _REPO_ROOT / "Felix AI Brain" / "03 Projects" / "Automatic Webside Seller" / "05 System" / "patches" / "2026-05-03-renderer"
+_RENDERER_DIR = _REPO_ROOT / "03 Projects" / "Automatic Webside Seller" / "05 System" / "patches" / "2026-05-03-renderer"
 sys.path.insert(0, str(_RENDERER_DIR))
 
 import httpx                                                # noqa: E402
