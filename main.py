@@ -89,6 +89,18 @@ class LetterRejectPayload(BaseModel):
     reason: str
 
 
+class LetterSentPayload(BaseModel):
+    """Body for POST /api/letters/{id}/sent — send-approved.py records
+    Letterxpress's job ID after a successful submission."""
+    transaction_id: str
+
+
+class LetterFailedPayload(BaseModel):
+    """Body for POST /api/letters/{id}/failed — send-approved.py logs
+    a reason when Letterxpress (or a network call) returns an error."""
+    reason: str
+
+
 class SettingsPayload(BaseModel):
     sender_name: str = ""
     sender_company: str = "PageBuilder"
@@ -667,6 +679,29 @@ async def reject_letter_endpoint(letter_id: int, payload: LetterRejectPayload):
     if not reject_letter(letter_id, payload.reason):
         raise HTTPException(409, "letter is not in 'pending_review' status")
     return {"ok": True, "letter_id": letter_id, "status": "rejected"}
+
+
+@app.post("/api/letters/{letter_id}/sent")
+async def sent_letter_endpoint(letter_id: int, payload: LetterSentPayload):
+    """Transition approved → sent. Records Letterxpress's transaction_id.
+    Called by send-approved.py once Letterxpress accepts the print job."""
+    if not get_letter(letter_id):
+        raise HTTPException(404, f"letter {letter_id} not found")
+    if not mark_letter_sent(letter_id, payload.transaction_id):
+        raise HTTPException(409, "letter is not in 'approved' status")
+    return {"ok": True, "letter_id": letter_id, "status": "sent", "transaction_id": payload.transaction_id}
+
+
+@app.post("/api/letters/{letter_id}/failed")
+async def failed_letter_endpoint(letter_id: int, payload: LetterFailedPayload):
+    """Transition any → failed. Reason is logged. Used by send-approved.py
+    when Letterxpress returns an error, or to manually mark a letter as
+    'we changed our mind after approving' (e.g., late discovery of website)."""
+    if not get_letter(letter_id):
+        raise HTTPException(404, f"letter {letter_id} not found")
+    if not mark_letter_failed(letter_id, payload.reason):
+        raise HTTPException(500, "failed to update letter status")
+    return {"ok": True, "letter_id": letter_id, "status": "failed"}
 
 
 @app.get("/{code}")
