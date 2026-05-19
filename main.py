@@ -33,6 +33,7 @@ from database import (
     mark_letter_failed,
     mark_letter_sent,
     reject_letter,
+    retry_failed_letter,
     save_contact_submission,
     save_settings,
     update_business,
@@ -702,6 +703,19 @@ async def failed_letter_endpoint(letter_id: int, payload: LetterFailedPayload):
     if not mark_letter_failed(letter_id, payload.reason):
         raise HTTPException(500, "failed to update letter status")
     return {"ok": True, "letter_id": letter_id, "status": "failed"}
+
+
+@app.post("/api/letters/{letter_id}/retry")
+async def retry_letter_endpoint(letter_id: int):
+    """Transition failed → approved so a failed-to-send letter can be re-shipped.
+    Clears the rejection_reason so the next failure (if any) doesn't leak the
+    prior error. Used after fixing the root cause (e.g., Letterxpress API
+    permission was missing → now enabled by support)."""
+    if not get_letter(letter_id):
+        raise HTTPException(404, f"letter {letter_id} not found")
+    if not retry_failed_letter(letter_id):
+        raise HTTPException(409, "letter is not in 'failed' status")
+    return {"ok": True, "letter_id": letter_id, "status": "approved"}
 
 
 @app.get("/{code}")

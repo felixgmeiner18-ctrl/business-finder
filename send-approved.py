@@ -58,10 +58,12 @@ DEFAULT_AUTH_USER = os.environ.get("AUTH_USER", "admin")
 DEFAULT_AUTH_PASS = os.environ.get("AUTH_PASS", "")
 DEFAULT_LX_USER = os.environ.get("LETTERXPRESS_USERNAME", "")
 DEFAULT_LX_KEY = os.environ.get("LETTERXPRESS_API_KEY", "")
-DEFAULT_LX_URL = os.environ.get("LETTERXPRESS_API_URL", "https://api.letterxpress.de/v2")
+DEFAULT_LX_URL = os.environ.get("LETTERXPRESS_API_URL", "https://api.letterxpress.de/v1")
 DEFAULT_COLOR = os.environ.get("LETTERXPRESS_COLOR", "1")        # 1 = b/w
 DEFAULT_MODE = os.environ.get("LETTERXPRESS_MODE", "simplex")    # one-sided
 DEFAULT_SHIP = os.environ.get("LETTERXPRESS_SHIP", "national")   # within AT/DE
+# Letterxpress v1 auth block uses {username, apikey} only — no mode field.
+# (v2 endpoints return 404 — Letterxpress hasn't migrated.)
 
 HTTP_TIMEOUT = 60.0
 EXPECTED_PRICE_PER_LETTER_EUR = 0.89
@@ -76,20 +78,19 @@ class LetterxpressError(Exception):
 
 def lx_balance(api_url: str, lx_user: str, lx_key: str) -> dict:
     """GET balance from Letterxpress. Returns {"balance": float, "currency": "EUR"}
-    or raises LetterxpressError."""
-    url = f"{api_url.rstrip('/')}/balance"
+    or raises LetterxpressError. Endpoint is /getBalance (camelCase)."""
+    url = f"{api_url.rstrip('/')}/getBalance"
     body = {"auth": {"username": lx_user, "apikey": lx_key}}
     with httpx.Client(timeout=HTTP_TIMEOUT) as client:
         r = client.post(url, json=body)
     if not r.is_success:
         raise LetterxpressError(f"balance check failed: HTTP {r.status_code} :: {r.text}")
     data = r.json()
-    # Letterxpress responses tend to wrap data — try common shapes:
-    if isinstance(data, dict):
-        if "balance" in data:
-            return {"balance": float(data["balance"]), "currency": data.get("currency", "EUR")}
-        if "data" in data and isinstance(data["data"], dict) and "balance" in data["data"]:
-            return {"balance": float(data["data"]["balance"]), "currency": data["data"].get("currency", "EUR")}
+    # Letterxpress v1 response shape (verified 2026-05-07):
+    #   {"status": 200, "message": "OK", "auth": {...}, "balance": {"value": "15", "currency": "EUR"}}
+    if isinstance(data, dict) and isinstance(data.get("balance"), dict):
+        bal = data["balance"]
+        return {"balance": float(bal["value"]), "currency": bal.get("currency", "EUR")}
     raise LetterxpressError(f"unexpected balance response shape: {data}")
 
 

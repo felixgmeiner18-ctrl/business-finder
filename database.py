@@ -416,3 +416,17 @@ def mark_letter_delivered(letter_id: int) -> bool:
         )
         conn.commit()
         return cursor.rowcount > 0
+
+
+def retry_failed_letter(letter_id: int) -> bool:
+    """Reset a 'failed' letter back to 'approved' so it can be re-sent.
+    Clears the rejection_reason so the next failure doesn't leak the prior one."""
+    with get_conn() as conn:
+        cursor = conn.execute(
+            """UPDATE letters
+                 SET status='approved', rejection_reason=NULL
+               WHERE id=? AND status='failed'""",
+            (letter_id,),
+        )
+        conn.commit()
+        return cursor.rowcount > 0
