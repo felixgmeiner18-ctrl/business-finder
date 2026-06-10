@@ -47,6 +47,15 @@ DIRECTORY_DOMAINS = {
     "stepstone.at", "hotfrog.de", "hotfrog.at", "alleskralle.com",
     "oeffnungszeitenbuch.de", "finde-offen.at", "geoportal.at",
     "fimag.at", "bauwohnwelt.at", "wo-in-vorarlberg.at", "firmania.at",
+    "daibau.at",
+    # gastro/beauty/booking platforms (niche widened 2026-06-10) —
+    # a Lieferando/Treatwell/Booking profile is NOT an own website
+    "lieferando.at", "lieferando.de", "mjam.at", "foodora.at",
+    "speisekarte.de", "speisekarte.menu", "falstaff.com", "falstaff.at",
+    "restaurantguru.com", "thefork.com", "thefork.at", "quandoo.at",
+    "quandoo.de", "happycow.net", "treatwell.at", "treatwell.de",
+    "planity.com", "salonkee.at", "booking.com", "airbnb.com", "airbnb.at",
+    "hotels.com", "expedia.com", "holidaycheck.de", "holidaycheck.at",
 }
 
 # A directory entry on an unknown domain betrays itself in the URL path:

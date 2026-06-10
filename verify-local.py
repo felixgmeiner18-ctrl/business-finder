@@ -28,7 +28,7 @@ import time
 
 import httpx
 
-from qualify import hard_disqualify, repair_postcode, score
+from qualify import REALISTIC_CATEGORIES, hard_disqualify, repair_postcode, score
 from scraper import TRADES_CRAFT_TAGS
 from verify import check_website_brave, check_website_ddg
 
@@ -56,7 +56,9 @@ def main() -> int:
                     help="e.g. Vorarlberg — strongly recommended")
     ap.add_argument("--limit", type=int, default=500)
     ap.add_argument("--trades", action="store_true",
-                    help="only trades categories (the locked niche)")
+                    help="only trades categories (the original niche)")
+    ap.add_argument("--realistic", action="store_true",
+                    help="all owner-run local categories (niche v2, 2026-06-10)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -65,7 +67,9 @@ def main() -> int:
         return 1
 
     client = httpx.Client(base_url=BASE, auth=(AUTH_USER, AUTH_PASS), timeout=30)
-    params = {"status": args.status, "limit": args.limit}
+    # fetch everything first — --limit caps AFTER category filtering,
+    # otherwise the first N rows may contain zero relevant categories
+    params = {"status": args.status, "limit": 500}
     if args.region:
         params["region"] = args.region
     rows = client.get("/businesses", params=params).raise_for_status().json()
@@ -73,6 +77,9 @@ def main() -> int:
         rows = rows.get("items", rows.get("rows", []))
     if args.trades:
         rows = [r for r in rows if r.get("category") in TRADES_CRAFT_TAGS]
+    if args.realistic:
+        rows = [r for r in rows if r.get("category") in REALISTIC_CATEGORIES]
+    rows = rows[:args.limit]
     print(f"{len(rows)} lead(s) with status={args.status!r} "
           f"— engine: {'brave' if BRAVE_KEY else 'ddg'}"
           f"{' (DRY RUN)' if args.dry_run else ''}\n")

@@ -12,6 +12,33 @@ Stages (used by verify-local.py):
 
 import re
 
+# Niche widened 2026-06-10 (Felix): not just trades — every owner-run local
+# business where a website realistically wins customers. Chains, public
+# institutions and regulated professions (doctors/pharmacies) stay out:
+# they don't buy websites from a letter.
+REALISTIC_CATEGORIES = {
+    # gastro
+    "restaurant", "fast_food", "cafe", "bar", "pub", "ice_cream",
+    "food_court", "deli", "nightclub", "biergarten", "events_venue",
+    # food craft
+    "bakery", "butcher", "cheese", "farm", "beverages",
+    # beauty & personal services
+    "hairdresser", "beauty", "cosmetics", "massage", "tattoo", "dojo",
+    "ski_school", "taxi", "travel_agency", "travel_agent",
+    "photographer", "veterinary", "hearing_aids",
+    # trades & home (the original niche stays in)
+    "electrician", "plumber", "hvac", "heating_engineer", "carpenter",
+    "painter", "roofer", "tiler", "glazier", "locksmith",
+    "metal_construction", "gasfitter", "stonemason", "plasterer",
+    "floorer", "handyman", "joiner", "handicraft", "gardener", "cleaner",
+    "car_repair", "car_wash", "car", "moving_company",
+    "bathroom_furnishing", "furniture", "garden_centre", "paint",
+    # small retail
+    "clothes", "shoes", "shoemaker", "jewelry", "florist", "electronics",
+    "sports", "bicycle", "second_hand", "gift", "houseware", "stationery",
+    "tailor", "optician", "guest_house", "hotel",
+}
+
 # Vorarlberg town → PLZ. Covers every town that has shown up in scrapes;
 # extend as new towns appear (towns with several PLZ get the main one).
 VLBG_PLZ = {
@@ -49,7 +76,12 @@ VLBG_PLZ = {
 TRADE_WORDS = re.compile(
     r"tischler|schreiner|installat|elektro|holzbau|zimmer|spengler|maler|"
     r"dach|metall|schlosser|stein|fliesen|glas|boden|heizung|sanitaer|sanitär|"
-    r"haustechnik|gebaeude|gebäude|energie|montage|bau|technik|werkstatt",
+    r"haustechnik|gebaeude|gebäude|energie|montage|bau|technik|werkstatt|"
+    # gastro / beauty / retail (niche widened 2026-06-10)
+    r"gasthaus|gasthof|wirtshaus|stube|restaurant|pizzeria|trattoria|imbiss|"
+    r"kebap|cafe|café|konditorei|baeckerei|bäckerei|metzgerei|fleischerei|"
+    r"friseur|frisör|frisier|salon|kosmetik|studio|nagel|massage|"
+    r"mode|boutique|blumen|schuh|optik|foto|hotel|pension",
     re.IGNORECASE)
 LEGAL_FORMS = re.compile(r"\b(gmbh|og|kg|e\.?u\.?|ges\.?m\.?b\.?h\.?)\b", re.IGNORECASE)
 # A bare trade word as the whole name = OSM junk ("Maler", "Decker", …)
