@@ -6,6 +6,7 @@ import re
 import secrets
 import threading
 import time
+import urllib.parse
 import warnings
 import zipfile
 from contextlib import asynccontextmanager
@@ -42,12 +43,18 @@ from database import (
     upsert_business,
 )
 from scraper import search_businesses
+from verify import (
+    DIRECTORY_DOMAINS,
+    check_website_brave as _check_website_brave,
+    check_website_ddg as _check_website_ddg,
+)
 
 
 class UpdatePayload(BaseModel):
     status: str | None = None
     notes: str | None = None
     follow_up: str | None = None
+    website_url: str | None = None
 
 
 class SearchPayload(BaseModel):
@@ -200,16 +207,8 @@ Return ONLY valid JSON (no markdown, no explanation):
 
 _search_state = {"searching": False, "region": "", "queue": [], "queue_total": 0, "queue_done": 0}
 
-# Domains that are NOT a real business website (directories, social, maps)
-DIRECTORY_DOMAINS = {
-    "facebook.com", "instagram.com", "twitter.com", "x.com",
-    "linkedin.com", "yelp.com", "tripadvisor.com", "tripadvisor.de",
-    "google.com", "google.de", "maps.google.com",
-    "gelbeseiten.de", "dasoertliche.de", "meinestadt.de",
-    "11880.com", "branchenbuch.de", "golocal.de",
-    "youtube.com", "tiktok.com", "pinterest.com",
-    "openstreetmap.org", "wikipedia.org",
-}
+# Canonical domain sets + checker implementations live in verify.py
+# (shared with verify-local.py, which runs from Felix's residential IP).
 
 
 def run_search(region: str, niche: str | None = None):
@@ -244,73 +243,6 @@ def run_queue(regions: list[str], niche: str | None = None):
     _search_state["queue"] = []
     _search_state["queue_total"] = 0
     _search_state["queue_done"] = 0
-
-
-_BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
-_SKIP_DOMAINS = {"google", "brave", "bing", "yahoo", "duckduckgo"}
-
-
-def _check_website_brave(name: str, region: str, api_key: str) -> dict:
-    """Search Brave for the business. Returns has_website, url, and exists.
-
-    exists=False means zero search results mention the business name at all —
-    a strong signal the OSM entry is a phantom (no real company behind it).
-    exists=None means the API call failed and we can't tell.
-
-    Free tier: 2,000 queries/month. Brave does not block datacenter IPs.
-    Set BRAVE_API_KEY in Railway environment variables.
-    """
-    query = f'"{name}" {region}'
-    try:
-        resp = httpx.get(
-            _BRAVE_SEARCH_URL,
-            params={"q": query, "count": 5, "country": "AT", "search_lang": "de"},
-            headers={
-                "Accept": "application/json",
-                "Accept-Encoding": "gzip",
-                "X-Subscription-Token": api_key,
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
-    except Exception as e:
-        return {"has_website": False, "url": None, "exists": None, "error": str(e)}
-
-    results = resp.json().get("web", {}).get("results", [])
-
-    if not results:
-        # No search results at all → likely a phantom OSM entry
-        return {"has_website": False, "url": None, "exists": False, "error": None}
-
-    # Existence signal: does any result title/snippet mention the business name?
-    name_lower = name.lower()
-    exists = any(
-        name_lower in r.get("title", "").lower()
-        or name_lower in r.get("description", "").lower()
-        for r in results
-    )
-
-    # Website signal: first result whose domain isn't a known directory/search engine
-    found_url = None
-    for r in results:
-        url = r.get("url", "")
-        m = re.match(r"https?://(?:www\.)?([^/]+)", url)
-        if not m:
-            continue
-        domain = m.group(1).lower()
-        if any(d in domain for d in DIRECTORY_DOMAINS):
-            continue
-        if any(s in domain for s in _SKIP_DOMAINS):
-            continue
-        found_url = url
-        break
-
-    return {
-        "has_website": bool(found_url),
-        "url": found_url,
-        "exists": exists,
-        "error": None,
-    }
 
 
 def _check_website(name: str, region: str) -> dict:
@@ -605,6 +537,7 @@ def update(business_id: int, payload: UpdatePayload):
         status=payload.status,
         notes=payload.notes,
         follow_up=payload.follow_up,
+        website_url=payload.website_url,
     )
     return {"ok": True}
 
@@ -618,8 +551,8 @@ def _verify_one(biz: dict) -> dict:
         result = _check_website_brave(biz["name"], biz.get("region", ""), api_key)
         result["checker"] = "brave"
     else:
-        result = _check_website(biz["name"], biz.get("region", ""))
-        result["checker"] = "google-fallback"
+        result = _check_website_ddg(biz["name"], biz.get("region", ""))
+        result["checker"] = "ddg"
 
     if result.get("error"):
         return result  # API failure — don't touch the row, we can't tell
@@ -646,12 +579,11 @@ def verify_website(business_id: int):
 @app.post("/businesses/verify-batch")
 def verify_batch(status: str = "New", limit: int = 50):
     """Qualify leads in bulk: verify every business with the given status
-    (default 'New'). Rate-limited to ~1 req/s for the Brave free tier.
+    (default 'New'). Uses Brave when BRAVE_API_KEY is set (1 req/s free
+    tier), otherwise DuckDuckGo (politely throttled to 1 req/2.5s).
     Returns a summary; rows are updated to 'Has Website' / 'Phantom' as
     results come in. Clean leads keep their status."""
-    if not os.environ.get("BRAVE_API_KEY", ""):
-        raise HTTPException(503, "BRAVE_API_KEY not set — batch verify "
-                                 "requires the Brave Search API")
+    delay = 1.1 if os.environ.get("BRAVE_API_KEY", "") else 2.5
     rows = get_businesses(status=status, limit=limit)
     summary = {"checked": 0, "has_website": 0, "phantom": 0,
                "clean": 0, "errors": 0, "details": []}
@@ -672,7 +604,7 @@ def verify_batch(status: str = "New", limit: int = 50):
             outcome = "clean — no website found, business exists"
         summary["details"].append({"id": biz["id"], "name": biz["name"],
                                    "outcome": outcome})
-        time.sleep(1.1)  # Brave free tier: 1 request/second
+        time.sleep(delay)
     return summary
 
 
