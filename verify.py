@@ -32,6 +32,20 @@ DIRECTORY_DOMAINS = {
     # Austrian directories — a listing there is NOT an own website
     "herold.at", "firmenabc.at", "wko.at", "cylex.at", "cylex.de",
     "stadtbranchenbuch.at", "oeffnungszeiten.at", "firmen.at",
+    "wirtschaft.at", "allbiz.at", "firmeninfo.at", "kompass.com",
+    "infobel.com", "infobel.at", "tupalo.com", "cybo.com",
+    "yellowmap.de", "branchenportal24.de", "werkenntdenbesten.de",
+    "9292.at", "firmenbuch.at", "ergebnis.at", "anbieter.at",
+    # regional news/portals with business listings — not an own website
+    "vol.at", "meinbezirk.at", "vienna.at", "krone.at", "laendleanzeiger.at",
+    # OSM/map mirrors — they republish the same OSM data we scraped
+    "mapcarta.com", "osm.org", "wheelmap.org", "foursquare.com", "waze.com",
+    "bergfex.at", "bergfex.com", "mapy.cz", "maps.me",
+    # phone books, job boards, marketplaces
+    "dastelefonbuch.de", "telefonabc.at", "wogibtswas.at", "willhaben.at",
+    "northdata.de", "firmenwissen.de", "kununu.com", "indeed.com",
+    "stepstone.at", "hotfrog.de", "hotfrog.at", "alleskralle.com",
+    "oeffnungszeitenbuch.de", "finde-offen.at", "geoportal.at",
 }
 
 SKIP_DOMAINS = {"google", "brave", "bing", "yahoo", "duckduckgo"}
