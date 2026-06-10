@@ -46,7 +46,15 @@ DIRECTORY_DOMAINS = {
     "northdata.de", "firmenwissen.de", "kununu.com", "indeed.com",
     "stepstone.at", "hotfrog.de", "hotfrog.at", "alleskralle.com",
     "oeffnungszeitenbuch.de", "finde-offen.at", "geoportal.at",
+    "fimag.at", "bauwohnwelt.at", "wo-in-vorarlberg.at", "firmania.at",
 }
+
+# A directory entry on an unknown domain betrays itself in the URL path:
+# /firmen/, /auskunft/, /branchen/… — an own website's hit is the homepage.
+DIRECTORY_PATH_HINTS = re.compile(
+    r"/(firmen|firma|auskunft|branchen|brancheneintrag|eintrag|verzeichnis|"
+    r"unternehmen|betriebe|gewerbe|company|companies|listing|profil)e?[-_/]",
+    re.IGNORECASE)
 
 SKIP_DOMAINS = {"google", "brave", "bing", "yahoo", "duckduckgo"}
 
@@ -67,6 +75,8 @@ def _first_own_domain(urls: list[str]) -> str | None:
         if any(d in domain for d in DIRECTORY_DOMAINS):
             continue
         if any(s in domain for s in SKIP_DOMAINS):
+            continue
+        if DIRECTORY_PATH_HINTS.search(url):
             continue
         return url
     return None

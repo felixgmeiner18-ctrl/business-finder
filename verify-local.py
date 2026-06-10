@@ -100,7 +100,8 @@ def main() -> int:
         new_plz = repair_postcode(biz)
         if new_plz:
             biz["postal_code"] = new_plz
-            print(f"  [{i}/{len(rows)}] {name}: PLZ ergänzt → {new_plz}")
+            # ASCII arrow: redirected output on Windows is cp1252, U+2192 crashes
+            print(f"  [{i}/{len(rows)}] {name}: PLZ ergänzt -> {new_plz}")
 
         result = check(name, region)
 

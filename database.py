@@ -87,6 +87,9 @@ def init_db():
             conn.execute("ALTER TABLE businesses ADD COLUMN site_sections TEXT")
         if "postal_code" not in columns:
             conn.execute("ALTER TABLE businesses ADD COLUMN postal_code TEXT DEFAULT ''")
+        if "priority" not in columns:
+            # NULL = never scored; verify-local.py writes a 1-10 quality score
+            conn.execute("ALTER TABLE businesses ADD COLUMN priority INTEGER")
         # Indices for fast filtering + sorting
         conn.execute("CREATE INDEX IF NOT EXISTS idx_status   ON businesses(status)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_region   ON businesses(region)")
@@ -181,7 +184,9 @@ def get_businesses(status=None, region=None, category=None, limit=500, offset=0)
     results = []
     for r in rows:
         d = dict(r)
-        d["priority"] = compute_priority(d.get("category"))
+        # stored quality score (verify-local.py) wins over the category heuristic
+        if d.get("priority") is None:
+            d["priority"] = compute_priority(d.get("category"))
         results.append(d)
     results.sort(key=lambda b: -b["priority"])
     return {"items": results, "total": total, "limit": limit, "offset": offset}
@@ -224,7 +229,8 @@ def get_business(business_id):
         row = conn.execute("SELECT * FROM businesses WHERE id=?", (business_id,)).fetchone()
     if row:
         d = dict(row)
-        d["priority"] = compute_priority(d.get("category"))
+        if d.get("priority") is None:
+            d["priority"] = compute_priority(d.get("category"))
         return d
     return None
 
