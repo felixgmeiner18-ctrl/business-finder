@@ -58,12 +58,13 @@ DEFAULT_AUTH_USER = os.environ.get("AUTH_USER", "admin")
 DEFAULT_AUTH_PASS = os.environ.get("AUTH_PASS", "")
 DEFAULT_LX_USER = os.environ.get("LETTERXPRESS_USERNAME", "")
 DEFAULT_LX_KEY = os.environ.get("LETTERXPRESS_API_KEY", "")
-DEFAULT_LX_URL = os.environ.get("LETTERXPRESS_API_URL", "https://api.letterxpress.de/v1")
+DEFAULT_LX_URL = os.environ.get("LETTERXPRESS_API_URL", "https://api.letterxpress.de/v2")
 DEFAULT_COLOR = os.environ.get("LETTERXPRESS_COLOR", "1")        # 1 = b/w
 DEFAULT_MODE = os.environ.get("LETTERXPRESS_MODE", "simplex")    # one-sided
-DEFAULT_SHIP = os.environ.get("LETTERXPRESS_SHIP", "national")   # within AT/DE
-# Letterxpress v1 auth block uses {username, apikey} only — no mode field.
-# (v2 endpoints return 404 — Letterxpress hasn't migrated.)
+DEFAULT_SHIP = os.environ.get("LETTERXPRESS_SHIP", "national")   # within AT/DE/CH
+# Letterxpress v2 API (confirmed working 2026-05-19).
+# Auth block requires "mode": "live" (or "test") — v2 enforces this.
+# Spec field is "shipping" (not "ship"), endpoint is POST /v2/printjobs.
 
 HTTP_TIMEOUT = 60.0
 EXPECTED_PRICE_PER_LETTER_EUR = 0.89
@@ -77,20 +78,20 @@ class LetterxpressError(Exception):
 
 
 def lx_balance(api_url: str, lx_user: str, lx_key: str) -> dict:
-    """GET balance from Letterxpress. Returns {"balance": float, "currency": "EUR"}
-    or raises LetterxpressError. Endpoint is /getBalance (camelCase)."""
-    url = f"{api_url.rstrip('/')}/getBalance"
-    body = {"auth": {"username": lx_user, "apikey": lx_key}}
+    """GET balance from Letterxpress v2. Returns {"balance": float, "currency": "EUR"}
+    or raises LetterxpressError. Endpoint: GET /v2/balance."""
+    url = f"{api_url.rstrip('/')}/balance"
+    body = {"auth": {"username": lx_user, "apikey": lx_key, "mode": "live"}}
     with httpx.Client(timeout=HTTP_TIMEOUT) as client:
-        r = client.post(url, json=body)
+        r = client.get(url, json=body)
     if not r.is_success:
         raise LetterxpressError(f"balance check failed: HTTP {r.status_code} :: {r.text}")
     data = r.json()
-    # Letterxpress v1 response shape (verified 2026-05-07):
-    #   {"status": 200, "message": "OK", "auth": {...}, "balance": {"value": "15", "currency": "EUR"}}
-    if isinstance(data, dict) and isinstance(data.get("balance"), dict):
-        bal = data["balance"]
-        return {"balance": float(bal["value"]), "currency": bal.get("currency", "EUR")}
+    # Letterxpress v2 response shape:
+    #   {"status": 200, "message": "OK", "data": {"balance": 15.0, "currency": "EUR"}}
+    if isinstance(data, dict) and isinstance(data.get("data"), dict):
+        d = data["data"]
+        return {"balance": float(d["balance"]), "currency": d.get("currency", "EUR")}
     raise LetterxpressError(f"unexpected balance response shape: {data}")
 
 
@@ -103,39 +104,35 @@ def lx_submit_letter(
     color: str = DEFAULT_COLOR,
     mode: str = DEFAULT_MODE,
     ship: str = DEFAULT_SHIP,
+    lx_mode: str = "live",
 ) -> str:
-    """Submit one PDF to Letterxpress /setJob. Returns the transaction_id."""
-    url = f"{api_url.rstrip('/')}/setJob"
+    """Submit one PDF to Letterxpress v2 POST /printjobs. Returns the transaction_id (int as str).
+    lx_mode: "live" for real send, "test" for postbox/dry-run at Letterxpress side."""
+    b64 = base64.b64encode(pdf_bytes).decode("ascii")
+    checksum = __import__("hashlib").md5(b64.encode()).hexdigest()
+    url = f"{api_url.rstrip('/')}/printjobs"
     body = {
-        "auth": {"username": lx_user, "apikey": lx_key},
+        "auth": {"username": lx_user, "apikey": lx_key, "mode": lx_mode},
         "letter": {
-            "base64_file": base64.b64encode(pdf_bytes).decode("ascii"),
-            "base64_filetype": "pdf",
+            "base64_file": b64,
+            "base64_file_checksum": checksum,
             "specification": {
                 "color": color,
                 "mode": mode,
-                "ship": ship,
+                "shipping": ship,
             },
         },
     }
     with httpx.Client(timeout=HTTP_TIMEOUT) as client:
         r = client.post(url, json=body)
     if not r.is_success:
-        raise LetterxpressError(f"setJob failed: HTTP {r.status_code} :: {r.text}")
+        raise LetterxpressError(f"printjobs failed: HTTP {r.status_code} :: {r.text[:300]}")
     data = r.json()
-    # Try common response shapes for the transaction_id:
-    candidates = [
-        data.get("letter", {}).get("id"),
-        data.get("letter", {}).get("letter_id"),
-        data.get("data", {}).get("id"),
-        data.get("data", {}).get("letter_id"),
-        data.get("id"),
-        data.get("letter_id"),
-    ]
-    for c in candidates:
-        if c is not None:
-            return str(c)
-    raise LetterxpressError(f"setJob success but no transaction_id in response: {data}")
+    # v2 response: {"status": 200, "data": {"id": 32852352, ...}}
+    job_id = data.get("data", {}).get("id")
+    if job_id is not None:
+        return str(job_id)
+    raise LetterxpressError(f"printjobs success but no id in response: {data}")
 
 
 # ─── Railway API client ─────────────────────────────────────────────────────
