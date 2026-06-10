@@ -28,6 +28,7 @@ import time
 
 import httpx
 
+from scraper import TRADES_CRAFT_TAGS
 from verify import check_website_brave, check_website_ddg
 
 BASE = os.environ.get("BUSINESS_FINDER_URL", "https://handwerkerweb.at")
@@ -50,7 +51,11 @@ def check(name: str, region: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--status", default="New")
+    ap.add_argument("--region", default=None,
+                    help="e.g. Vorarlberg — strongly recommended")
     ap.add_argument("--limit", type=int, default=500)
+    ap.add_argument("--trades", action="store_true",
+                    help="only trades categories (the locked niche)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -59,10 +64,14 @@ def main() -> int:
         return 1
 
     client = httpx.Client(base_url=BASE, auth=(AUTH_USER, AUTH_PASS), timeout=30)
-    rows = client.get("/businesses", params={
-        "status": args.status, "limit": args.limit}).raise_for_status().json()
+    params = {"status": args.status, "limit": args.limit}
+    if args.region:
+        params["region"] = args.region
+    rows = client.get("/businesses", params=params).raise_for_status().json()
     if isinstance(rows, dict):
-        rows = rows.get("rows", rows.get("businesses", []))
+        rows = rows.get("items", rows.get("rows", []))
+    if args.trades:
+        rows = [r for r in rows if r.get("category") in TRADES_CRAFT_TAGS]
     print(f"{len(rows)} lead(s) with status={args.status!r} "
           f"— engine: {'brave' if BRAVE_KEY else 'ddg'}"
           f"{' (DRY RUN)' if args.dry_run else ''}\n")
