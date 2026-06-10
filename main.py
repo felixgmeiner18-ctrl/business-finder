@@ -339,7 +339,13 @@ def health():
 
 
 @app.get("/")
+def homepage():
+    return FileResponse("static/home.html")
+
+
+@app.get("/portfolio")
 def portfolio():
+    """Old PageBuilder draft — kept for reference, superseded by home.html."""
     return FileResponse("static/portfolio.html")
 
 
