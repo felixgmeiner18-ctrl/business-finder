@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>handwerkerweb.at — Websites für Handwerksbetriebe in Vorarlberg</title>
-<meta name="description" content="Ihre Website zum Festpreis: € 590, fertig in 14 Tagen. Änderungen einfach per Nachricht — in 24 Stunden online. Testen Sie die Live-Vorschau mit Ihrem Betriebsnamen.">
+<meta name="description" content="Ihre Website zum Festpreis: € 590, fertig in 14 Tagen. Tippen Sie Ihren Betriebsnamen ein und sehen Sie Ihre Website live — am Laptop, am Handy, in Vollbild.">
 <meta property="og:title" content="handwerkerweb.at — Websites wie Maßarbeit">
 <meta property="og:description" content="Festpreis € 590 · fertig in 14 Tagen · Live-Vorschau mit Ihrem Betriebsnamen.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://handwerkerweb.at/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
@@ -47,14 +48,11 @@ h1,h2,h3{font-family:var(--disp);line-height:1.06;letter-spacing:-.015em}
 .mono{font-family:var(--mono)}
 .ic{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
-/* grain */
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-/* scroll progress */
 #progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--timber),#f0ad62);z-index:200}
 
-/* blueprint grid */
 .bp{position:relative}
 .bp::before{content:"";position:absolute;inset:0;pointer-events:none;
   background-image:linear-gradient(rgba(159,177,189,.05) 1px,transparent 1px),
@@ -66,15 +64,13 @@ body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;
 .eyebrow::before{content:"";width:34px;height:1px;background:var(--timber)}
 .hand{font-family:var(--hand);font-size:1.35rem;color:var(--timber);letter-spacing:0;text-transform:none}
 
-/* masked title reveal */
 .mask .ln{display:block;overflow:hidden}
 .mask .ln i{display:inline-block;font-style:normal;transform:translateY(112%);
   transition:transform .9s cubic-bezier(.2,.7,.2,1)}
 .mask .ln:nth-child(2) i{transition-delay:.1s}
-.mask .ln:nth-child(3) i{transition-delay:.2s}
 .mask.in .ln i{transform:none}
 
-/* ── NAV ── */
+/* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:90;transition:background .35s,box-shadow .35s}
 nav.scrolled{background:rgba(18,24,29,.86);backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--ink-3)}
 nav .wrap{display:flex;align-items:center;height:72px;gap:28px}
@@ -88,7 +84,7 @@ nav .links a:hover{color:var(--white)}
 .navcall .ic{width:16px;height:16px;stroke-width:2}
 @media(max-width:800px){nav .links a:not(.navcall){display:none}}
 
-/* ── HERO ── */
+/* HERO */
 .hero{min-height:100svh;display:flex;align-items:center;padding:130px 0 90px;position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;right:-28vw;top:-30vh;width:75vw;height:75vw;border-radius:50%;
   background:radial-gradient(circle,rgba(224,154,78,.13) 0%,transparent 62%);pointer-events:none}
@@ -116,7 +112,6 @@ nav .links a:hover{color:var(--white)}
 .hero .meta b{display:block;font-family:var(--disp);font-size:1.55rem;color:var(--paper);letter-spacing:0}
 .hero .meta b i{color:var(--timber);font-style:normal}
 
-/* hero mockup */
 .stage{position:relative;perspective:1200px;will-change:transform}
 .dim{position:absolute;font-family:var(--mono);font-size:.66rem;color:var(--stone);letter-spacing:.08em;white-space:nowrap}
 .dim::before{content:"";position:absolute;background:var(--ink-3)}
@@ -127,7 +122,8 @@ nav .links a:hover{color:var(--white)}
 .dim.side::before{top:0;bottom:0;left:50%;width:1px}
 .dim.side span{background:var(--ink);position:relative;padding:12px 0}
 .browser{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:18px;overflow:hidden;
-  box-shadow:0 40px 90px rgba(0,0,0,.5);transform:rotateY(-7deg) rotateX(3deg);transform-style:preserve-3d}
+  box-shadow:0 40px 90px rgba(0,0,0,.5);transform-style:preserve-3d;
+  transform:rotateY(calc(-7deg + var(--ry,0deg))) rotateX(calc(3deg + var(--rx,0deg)))}
 @media(max-width:920px){.browser{transform:none}}
 .browser .bar{display:flex;gap:7px;align-items:center;background:#0d1216;padding:12px 16px;border-bottom:1px solid var(--ink-3)}
 .browser .bar i{width:10px;height:10px;border-radius:50%;background:#2c3a45}
@@ -139,7 +135,7 @@ nav .links a:hover{color:var(--white)}
 @keyframes build{to{opacity:1;transform:none}}
 .asm .shero{position:relative;padding:34px 28px;color:#fff;background:
   linear-gradient(115deg,rgba(14,26,34,.88) 30%,rgba(14,26,34,.45)),
-  url('https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=900&q=70&fm=jpg&fit=crop') center/cover}
+  url('https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=900&q=70&fm=jpg&fit=crop') center/cover}
 .asm .shero .k{font-family:var(--disp);font-weight:800;font-size:1.3rem}
 .asm .shero .l{font-family:var(--mono);font-size:.68rem;opacity:.8;margin-top:6px;letter-spacing:.08em}
 .asm .shero .b{display:inline-block;background:var(--timber);color:var(--ink);border-radius:8px;
@@ -158,7 +154,7 @@ nav .links a:hover{color:var(--white)}
   animation:stamp .45s cubic-bezier(.3,1.6,.4,1) 2.15s forwards}
 @keyframes stamp{to{opacity:1;transform:rotate(-3deg) scale(1)}}
 
-/* ── MARQUEE ── */
+/* MARQUEE */
 .marquee{border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3);padding:20px 0;overflow:hidden;background:var(--ink-2)}
 .marquee .track{display:flex;width:max-content;animation:scroll 36s linear infinite}
 .marquee span{font-family:var(--disp);font-weight:800;font-size:1.05rem;text-transform:uppercase;
@@ -166,8 +162,10 @@ nav .links a:hover{color:var(--white)}
 .marquee span i{color:var(--timber);font-style:normal;padding-right:56px}
 @keyframes scroll{to{transform:translateX(-50%)}}
 
-/* ── KONFIGURATOR ── */
-.config{padding:120px 0;position:relative}
+/* ── SHOWCASE STUDIO ── */
+.config{padding:120px 0 140px;position:relative;overflow:hidden}
+.config::after{content:"";position:absolute;left:50%;bottom:-10%;width:900px;height:600px;transform:translateX(-50%);
+  background:radial-gradient(ellipse,rgba(224,154,78,.12) 0%,transparent 65%);pointer-events:none}
 .config .head{max-width:42rem;margin-bottom:20px}
 .config h2{font-size:clamp(2rem,4.8vw,3.6rem);font-weight:900;text-transform:uppercase;color:var(--white);margin-top:16px}
 .config h2 em{font-style:normal;color:var(--timber)}
@@ -177,45 +175,137 @@ nav .links a:hover{color:var(--white)}
   padding:15px 18px;font:inherit;font-size:1rem;color:var(--paper);transition:border-color .2s}
 .controls input:focus{outline:none;border-color:var(--timber)}
 .controls input::placeholder{color:#46535c}
-.trades{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:38px}
+.trades{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:50px}
 .tchip{font-family:var(--disp);font-weight:700;font-size:.86rem;background:var(--ink-2);border:1px solid var(--ink-3);
   color:var(--mist);border-radius:99px;padding:10px 20px;cursor:pointer;transition:all .2s}
 .tchip:hover{border-color:var(--timber);color:var(--paper)}
 .tchip.active{background:var(--timber);border-color:var(--timber);color:var(--ink);transform:scale(1.04)}
-.pv-stage{position:relative;max-width:880px;margin:0 auto}
-.pv-note{position:absolute;top:-34px;right:6px;transform:rotate(2deg);z-index:5}
-@media(max-width:700px){.pv-note{display:none}}
-.pv{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:20px;overflow:hidden;
-  box-shadow:0 50px 110px rgba(0,0,0,.55)}
-.pv .bar{display:flex;gap:7px;align-items:center;background:#0d1216;padding:13px 18px;border-bottom:1px solid var(--ink-3)}
-.pv .bar i{width:11px;height:11px;border-radius:50%;background:#2c3a45}
-.pv .bar .url{margin-left:10px;background:var(--ink);border:1px solid var(--ink-3);border-radius:7px;
-  font-family:var(--mono);font-size:.72rem;color:var(--stone);padding:5px 16px;flex:1;white-space:nowrap;overflow:hidden}
-.pv .bar .url b{color:var(--timber);font-weight:500}
-.pv-site{transition:opacity .25s}
-.pv-site.swap{opacity:0}
-.pv-nav{display:flex;align-items:center;gap:14px;padding:16px 30px;background:var(--pvc1,#2e1c0c);color:#fff}
-.pv-nav .pl{font-family:var(--disp);font-weight:800;font-size:.95rem}
-.pv-nav .pm{margin-left:auto;display:flex;gap:18px;font-size:.7rem;opacity:.75;font-family:var(--mono)}
-@media(max-width:560px){.pv-nav .pm{display:none}}
-.pv-hero{position:relative;padding:54px 30px 46px;color:#fff;background-size:cover;background-position:center}
-.pv-hero .ort{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;opacity:.85}
-.pv-hero .nm{font-family:var(--disp);font-weight:900;font-size:clamp(1.5rem,4vw,2.4rem);margin:8px 0 4px;text-transform:none}
-.pv-hero .tg{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;opacity:.85}
-.pv-hero .cta{display:inline-block;background:#fff;color:#1a1a1a;border-radius:9px;font-weight:800;
-  font-size:.82rem;padding:10px 22px;margin-top:20px;font-family:var(--disp)}
-.pv-srv{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:24px 30px}
-@media(max-width:560px){.pv-srv{grid-template-columns:1fr}}
-.pv-srv .s{background:var(--ink);border:1px solid var(--ink-3);border-radius:12px;padding:18px 16px}
-.pv-srv .s b{font-family:var(--disp);font-size:.92rem;color:var(--paper);display:block;margin-bottom:5px}
-.pv-srv .s span{font-size:.78rem;color:var(--stone)}
-.pv-foot{display:flex;align-items:center;gap:16px;justify-content:space-between;padding:18px 30px;border-top:1px solid var(--ink-3);flex-wrap:wrap}
-.pv-foot .tel{font-family:var(--disp);font-weight:800;color:var(--paper)}
-.pv-foot .fb{background:var(--pvacc,#e09a4e);color:#14181c;font-weight:800;font-size:.8rem;border-radius:9px;padding:9px 20px;font-family:var(--disp)}
-.config .after{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:42px;flex-wrap:wrap}
-.config .after .hand{font-size:1.5rem}
 
-/* ── PHOTO BAND ── */
+/* 3D devices */
+.devices{position:relative;perspective:1600px;max-width:860px;margin:0 auto;z-index:2}
+.devbob{animation:bob 7s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.dev3d{position:relative;transform-style:preserve-3d;
+  transform:rotateY(var(--ry,0deg)) rotateX(var(--rx,0deg));transition:transform .1s linear}
+.laptop{position:relative;margin:0 auto;max-width:680px}
+.lap-screen{background:#06090c;border:10px solid #06090c;border-bottom:0;border-radius:16px 16px 0 0;
+  overflow:hidden;box-shadow:0 60px 120px rgba(0,0,0,.6)}
+.lap-base{height:16px;background:linear-gradient(180deg,#28333c,#0d1419);border-radius:0 0 18px 18px;
+  position:relative;box-shadow:0 30px 60px rgba(0,0,0,.5)}
+.lap-base::before{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);
+  width:110px;height:7px;background:#0a0f13;border-radius:0 0 8px 8px}
+.phone{position:absolute;right:-26px;bottom:-44px;width:178px;background:#06090c;border:7px solid #06090c;
+  border-radius:26px;overflow:hidden;transform:translateZ(70px) rotateY(-8deg) rotate(2deg);
+  box-shadow:0 40px 80px rgba(0,0,0,.65);z-index:3}
+.phone::before{content:"";position:absolute;top:7px;left:50%;transform:translateX(-50%);width:54px;height:14px;
+  background:#06090c;border-radius:8px;z-index:5}
+@media(max-width:700px){.phone{right:-8px;width:120px;bottom:-30px}}
+.float-tag{position:absolute;font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;color:var(--timber);
+  background:rgba(18,24,29,.85);border:1px solid rgba(224,154,78,.4);border-radius:9px;padding:7px 13px;
+  backdrop-filter:blur(6px);z-index:4;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.float-tag.t1{top:-18px;left:-26px;transform:translateZ(90px) rotate(-3deg);animation:bob 6s ease-in-out .8s infinite}
+.float-tag.t2{bottom:30px;left:-44px;transform:translateZ(110px) rotate(2deg);animation:bob 8s ease-in-out .3s infinite}
+@media(max-width:700px){.float-tag.t2{display:none}.float-tag.t1{left:-6px}}
+
+/* mini site inside laptop */
+.msite{font-size:12px;transition:opacity .25s;background:#fff;color:#16181c}
+.msite.swap{opacity:0}
+.m-nav{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#fff}
+.m-nav .lg{font-family:var(--disp);font-weight:800;font-size:.78rem}
+.m-nav .mm{margin-left:auto;display:flex;gap:13px;font-family:var(--mono);font-size:.52rem;opacity:.8;letter-spacing:.06em}
+.m-hero{position:relative;padding:38px 22px 32px;color:#fff;background-size:cover;background-position:center}
+.m-hero .o{font-family:var(--mono);font-size:.5rem;letter-spacing:.18em;opacity:.85}
+.m-hero .n{font-family:var(--disp);font-weight:900;font-size:1.35rem;margin:5px 0 3px}
+.m-hero .t{font-family:var(--mono);font-size:.52rem;letter-spacing:.1em;opacity:.85}
+.m-hero .c{display:inline-block;background:#fff;color:#1a1a1a;border-radius:6px;font-weight:800;
+  font-size:.58rem;padding:7px 14px;margin-top:13px;font-family:var(--disp)}
+.m-srv{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:14px 20px;background:#f4f3ef}
+.m-srv .s{background:#fff;border:1px solid #e4e1d8;border-radius:8px;padding:10px}
+.m-srv .s b{font-family:var(--disp);font-size:.6rem;display:block;color:#16181c}
+.m-srv .s span{font-size:.5rem;color:#7a8088;line-height:1.4;display:block;margin-top:2px}
+.m-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;background:#16181c;color:#fff}
+.m-foot .tl{font-family:var(--disp);font-weight:800;font-size:.6rem}
+.m-foot .fb{border-radius:6px;font-weight:800;font-size:.52rem;padding:6px 12px;color:#14181c;font-family:var(--disp)}
+/* phone mini site */
+.psite{font-size:10px;transition:opacity .25s;background:#fff}
+.psite.swap{opacity:0}
+.p-hero{padding:30px 13px 20px;color:#fff;background-size:cover;background-position:center}
+.p-hero .n{font-family:var(--disp);font-weight:900;font-size:.86rem;line-height:1.15}
+.p-hero .t{font-family:var(--mono);font-size:.42rem;letter-spacing:.1em;opacity:.85;margin-top:3px}
+.p-hero .c{display:inline-block;background:#fff;color:#1a1a1a;border-radius:5px;font-weight:800;font-size:.46rem;padding:5px 9px;margin-top:9px;font-family:var(--disp)}
+.p-rows{padding:9px 11px;display:flex;flex-direction:column;gap:6px;background:#f4f3ef}
+.p-rows .r{background:#fff;border:1px solid #e4e1d8;border-radius:6px;padding:7px 9px;
+  font-family:var(--disp);font-weight:700;font-size:.5rem;color:#16181c;display:flex;justify-content:space-between}
+.p-rows .r i{color:#b9772f;font-style:normal}
+.p-call{margin:0 11px 11px;border-radius:7px;text-align:center;font-family:var(--disp);font-weight:800;
+  font-size:.54rem;color:#14181c;padding:8px}
+
+.config .after{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:74px;flex-wrap:wrap}
+.config .after .hand{font-size:1.5rem}
+.btn.demo{background:var(--ink-2);border:1.5px solid var(--timber);color:var(--timber)}
+.btn.demo:hover{background:var(--timber);color:var(--ink)}
+
+/* ── FULLSCREEN DEMO ── */
+#demo{position:fixed;inset:0;z-index:300;background:var(--ink);display:none;flex-direction:column}
+#demo.open{display:flex;animation:demoIn .35s cubic-bezier(.2,.7,.2,1)}
+@keyframes demoIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+#demo .dbar{display:flex;gap:8px;align-items:center;background:#0d1216;padding:12px 16px;border-bottom:1px solid var(--ink-3);flex-shrink:0}
+#demo .dbar i{width:11px;height:11px;border-radius:50%;background:#2c3a45}
+#demo .dbar i.r{background:#e0764e;cursor:pointer}
+#demo .dbar .url{margin-left:10px;background:var(--ink);border:1px solid var(--ink-3);border-radius:7px;
+  font-family:var(--mono);font-size:.72rem;color:var(--stone);padding:5px 16px;flex:1;white-space:nowrap;overflow:hidden}
+#demo .dbar .url b{color:var(--timber);font-weight:500}
+#demo .dbar .x{background:none;border:1px solid var(--ink-3);color:var(--mist);border-radius:8px;
+  padding:6px 14px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:var(--disp)}
+#demo .dbar .x:hover{border-color:var(--timber);color:var(--timber)}
+.dscroll{overflow-y:auto;flex:1;background:#fff;color:#1a1d21;font-size:16px;position:relative;overscroll-behavior:contain}
+.ribbon{position:fixed;top:64px;right:-46px;transform:rotate(38deg);background:var(--timber);color:var(--ink);
+  font-family:var(--mono);font-weight:700;font-size:.66rem;letter-spacing:.14em;padding:7px 60px;z-index:320;
+  box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.dcta{position:sticky;bottom:0;z-index:310;display:flex;gap:14px;align-items:center;justify-content:center;
+  background:rgba(18,24,29,.94);backdrop-filter:blur(10px);padding:14px;border-top:1px solid var(--ink-3)}
+.dcta .hand{font-size:1.25rem}
+@media(max-width:560px){.dcta .hand{display:none}}
+/* demo site itself */
+.d-nav{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:16px;padding:16px 5vw;color:#fff}
+.d-nav .lg{font-family:var(--disp);font-weight:900;font-size:1.05rem}
+.d-nav .mm{margin-left:auto;display:flex;gap:22px;font-size:.78rem;font-weight:600;opacity:.9}
+@media(max-width:640px){.d-nav .mm{display:none}}
+.d-nav .tel{background:rgba(255,255,255,.94);color:#16181c;border-radius:99px;padding:8px 18px;
+  font-weight:800;font-size:.8rem;font-family:var(--disp);margin-left:auto}
+.d-nav .mm + .tel{margin-left:0}
+.d-hero{position:relative;min-height:62vh;display:flex;align-items:flex-end;color:#fff;
+  background-size:cover;background-position:center;padding:6vh 5vw 7vh}
+.d-hero .o{font-family:var(--mono);font-size:.74rem;letter-spacing:.2em}
+.d-hero .n{font-family:var(--disp);font-weight:900;font-size:clamp(2.2rem,6vw,4rem);line-height:1.05;margin:10px 0 8px}
+.d-hero .cl{font-size:1.1rem;opacity:.92;max-width:34rem}
+.d-hero .cc{display:inline-block;background:#fff;color:#16181c;border-radius:11px;font-family:var(--disp);
+  font-weight:800;padding:14px 28px;margin-top:22px;font-size:.95rem}
+.d-sec{padding:9vh 5vw}
+.d-sec.alt{background:#f4f3ef}
+.d-eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:600}
+.d-sec h2{font-family:var(--disp);font-weight:900;font-size:clamp(1.7rem,3.6vw,2.6rem);margin:12px 0 30px;color:#16181c}
+.d-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:760px){.d-cards{grid-template-columns:1fr}}
+.d-card{background:#fff;border:1px solid #e6e3da;border-radius:16px;padding:26px}
+.d-card .num{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em}
+.d-card b{font-family:var(--disp);font-size:1.1rem;display:block;margin:10px 0 6px;color:#16181c}
+.d-card p{font-size:.92rem;color:#5e6670}
+.d-about{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+@media(max-width:760px){.d-about{grid-template-columns:1fr}}
+.d-about img{border-radius:16px;width:100%;height:340px;object-fit:cover}
+.d-about p{color:#454c54;margin-bottom:12px}
+.d-gal{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.d-gal img{border-radius:14px;width:100%;height:260px;object-fit:cover}
+.d-contact{color:#fff;text-align:center;padding:10vh 5vw}
+.d-contact h2{color:#fff;font-family:var(--disp);font-weight:900;font-size:clamp(1.8rem,4vw,2.8rem)}
+.d-contact p{opacity:.85;margin:10px 0 26px}
+.d-contact .cc{display:inline-block;background:#fff;color:#16181c;border-radius:11px;font-family:var(--disp);font-weight:800;padding:15px 32px}
+.d-foot{background:#101317;color:#9aa3ad;font-size:.82rem;padding:26px 5vw;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.dreveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+.dreveal.in{opacity:1;transform:none}
+
+/* PHOTO BAND */
 .band{padding:110px 0 90px}
 .band .head{max-width:36rem;margin-bottom:54px}
 .band h2{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:900;text-transform:uppercase;color:var(--white);margin-top:16px}
@@ -239,7 +329,7 @@ nav .links a:hover{color:var(--white)}
   font-size:.66rem;letter-spacing:.1em;color:var(--stone)}
 .shot2 figcaption b{color:var(--mist);font-weight:500}
 
-/* ── USP ── */
+/* USP */
 .usp{padding:110px 0}
 .usp h2{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:900;text-transform:uppercase;color:var(--white);margin:18px 0 16px;max-width:36rem}
 .usp h2 em{font-style:normal;color:var(--timber)}
@@ -256,13 +346,12 @@ nav .links a:hover{color:var(--white)}
   border-radius:10px;padding:12px 16px;font-size:.86rem;color:var(--paper);font-style:italic}
 .usp .fine{margin-top:26px;font-family:var(--mono);font-size:.72rem;color:var(--stone);letter-spacing:.04em}
 
-/* ── LIGHT ── */
+/* LIGHT */
 .light{background:var(--paper);color:var(--ink)}
 .light h2{color:var(--ink);font-size:clamp(2rem,4.6vw,3.2rem);font-weight:900;text-transform:uppercase}
 .light .eyebrow{color:var(--timber-deep)}
 .light .eyebrow::before{background:var(--timber-deep)}
 
-/* features bento */
 .features{padding:110px 0}
 .features .head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:54px}
 @media(max-width:820px){.features .head{grid-template-columns:1fr}}
@@ -295,7 +384,7 @@ nav .links a:hover{color:var(--white)}
 .feat.wide p{color:var(--mist)}
 .feat.wide .fic{background:var(--timber);color:var(--ink)}
 
-/* ── PROCESS ── */
+/* PROCESS */
 .process{padding:110px 0}
 .process .tl{margin-top:56px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 @media(max-width:920px){.process .tl{grid-template-columns:1fr 1fr}}
@@ -307,7 +396,7 @@ nav .links a:hover{color:var(--white)}
 .tstep h3{color:var(--white);font-size:1.18rem;font-weight:800;margin:12px 0 8px;text-transform:none}
 .tstep p{color:var(--mist);font-size:.93rem}
 
-/* ── PRICING ── */
+/* PRICING */
 .pricing{padding:110px 0}
 .pcards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:54px;max-width:880px;margin-left:auto;margin-right:auto;position:relative}
 @media(max-width:780px){.pcards{grid-template-columns:1fr}}
@@ -334,7 +423,7 @@ nav .links a:hover{color:var(--white)}
 .price-hand{position:absolute;top:-52px;right:-8px;transform:rotate(3deg);color:var(--timber-deep)}
 @media(max-width:780px){.price-hand{display:none}}
 
-/* ── FAQ ── */
+/* FAQ */
 .faq{padding:110px 0;background:#e9e7e0}
 .faq .list{max-width:780px;margin:50px auto 0}
 .faq details{background:var(--white);border:1px solid var(--line);border-radius:16px;margin-bottom:14px;padding:0 26px;transition:box-shadow .25s}
@@ -345,7 +434,7 @@ nav .links a:hover{color:var(--white)}
 .faq details[open] summary::after{transform:rotate(45deg)}
 .faq .a{padding:0 0 22px;color:var(--stone);font-size:.96rem}
 
-/* ── CONTACT ── */
+/* CONTACT */
 .contact{padding:120px 0}
 .contact .grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
 @media(max-width:860px){.contact .grid{grid-template-columns:1fr}}
@@ -367,13 +456,11 @@ form{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:22px;pa
 .field input::placeholder,.field textarea::placeholder{color:#46535c}
 #formMsg{margin-top:14px;font-size:.9rem;font-weight:600}
 
-/* ── FOOTER ── */
 footer{border-top:1px solid var(--ink-3);padding:50px 0 40px;font-size:.88rem;color:var(--stone)}
 footer .wrap{display:flex;flex-wrap:wrap;gap:36px;justify-content:space-between}
 footer a{color:var(--mist)}
 footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;display:block;margin-bottom:10px}
 
-/* reveals */
 .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .reveal.in{opacity:1;transform:none}
 .reveal.d1{transition-delay:.08s}.reveal.d2{transition-delay:.16s}.reveal.d3{transition-delay:.24s}
@@ -382,7 +469,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
   .reveal,.hero h1 .ln span,.hero .sub,.cta-row,.hero .meta,.asm>*,.stamp{opacity:1;transform:none}
   .mask .ln i{transform:none}
   .shot2 figure{clip-path:none}
-  .marquee .track{animation:none !important}
+  .marquee .track,.devbob,.float-tag{animation:none !important}
 }
 </style>
 </head>
@@ -422,9 +509,9 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
         <span class="ln"><span>wie</span></span>
         <span class="ln"><span>Maßarbeit.</span></span>
       </h1>
-      <p class="sub">Über die Hälfte Ihrer Kunden sucht zuerst im Internet. Wer dort nicht zu finden ist, verliert Aufträge an den Mitbewerb — <b>jeden Tag</b>. Tippen Sie unten Ihren Betriebsnamen ein und sehen Sie selbst, wie Ihre Website aussehen könnte.</p>
+      <p class="sub">Über die Hälfte Ihrer Kunden sucht zuerst im Internet. Wer dort nicht zu finden ist, verliert Aufträge an den Mitbewerb — <b>jeden Tag</b>. Tippen Sie unten Ihren Betriebsnamen ein und gehen Sie durch Ihre eigene Website.</p>
       <div class="cta-row">
-        <a class="btn primary" href="#vorschau">▶ Live-Vorschau testen</a>
+        <a class="btn primary" href="#vorschau">▶ Meine Website ansehen</a>
         <a class="btn ghost" href="tel:+436766505015"><svg class="ic"><use href="#i-call"/></svg>Anrufen</a>
       </div>
       <div class="meta">
@@ -436,7 +523,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
     <div class="stage" id="heroStage">
       <div class="dim top"><span>IHRE WEBSITE · 100% RESPONSIVE</span></div>
       <div class="dim side"><span>FERTIG IN 14 TAGEN</span></div>
-      <div class="browser">
+      <div class="browser" id="heroTilt">
         <div class="bar"><i></i><i></i><i></i><span class="url">https://<b>ihr-betrieb.at</b></span></div>
         <div class="asm">
           <div class="shero a1">
@@ -464,41 +551,73 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
   <div class="wrap">
     <div class="head">
       <span class="eyebrow">Live-Vorschau</span>
-      <h2 class="mask"><span class="ln"><i>Sehen Sie Ihre Website.</i></span><span class="ln"><i><em>Jetzt. Sofort.</em></i></span></h2>
+      <h2 class="mask"><span class="ln"><i>Gehen Sie durch</i></span><span class="ln"><i><em>Ihre eigene Website.</em></i></span></h2>
     </div>
-    <p class="lead reveal">Betriebsname eintippen, Branche wählen — fertig. Genau so schnell geht das bei uns. Was Sie hier sehen, bauen wir in 14 Tagen in echt.</p>
+    <p class="lead reveal">Betriebsname eintippen, Branche wählen — und dann <b style="color:var(--paper)">Vollbild öffnen</b> und durch Ihre Website scrollen wie Ihre Kunden. Genau das bauen wir in 14 Tagen in echt.</p>
     <div class="controls reveal">
       <input id="cfgName" maxlength="40" placeholder="Ihr Betriebsname — z. B. Tischlerei Hartmann" value="Tischlerei Hartmann" autocomplete="off">
       <input id="cfgOrt" maxlength="30" placeholder="Ihr Ort — z. B. Schlins" value="Schlins" autocomplete="off">
     </div>
     <div class="trades reveal" id="trades"></div>
-    <div class="pv-stage reveal">
-      <span class="hand pv-note">↓ das ist schon Ihre Website</span>
-      <div class="pv">
-        <div class="bar"><i></i><i></i><i></i><span class="url">https://<b id="pvUrl">tischlerei-hartmann.at</b></span></div>
-        <div class="pv-site" id="pvSite">
-          <div class="pv-nav"><span class="pl" id="pvLogo">Tischlerei Hartmann</span>
-            <span class="pm"><span>LEISTUNGEN</span><span>ÜBER UNS</span><span>KONTAKT</span></span></div>
-          <div class="pv-hero" id="pvHero">
-            <div class="ort" id="pvOrt">SCHLINS · VORARLBERG</div>
-            <div class="nm" id="pvName">Tischlerei Hartmann</div>
-            <div class="tg" id="pvTag">MASSMÖBEL · INNENAUSBAU · MONTAGE</div>
-            <span class="cta">Jetzt anfragen</span>
+
+    <div class="devices reveal" id="devices">
+      <div class="devbob">
+        <div class="dev3d" id="devTilt">
+          <span class="float-tag t1">IHR LOGO · IHRE FARBEN</span>
+          <span class="float-tag t2">AUCH AM HANDY PERFEKT</span>
+          <div class="laptop">
+            <div class="lap-screen">
+              <div class="msite" id="mSite">
+                <div class="m-nav" id="mNav"><span class="lg" id="mLogo">Tischlerei Hartmann</span>
+                  <span class="mm"><span>LEISTUNGEN</span><span>ÜBER UNS</span><span>KONTAKT</span></span></div>
+                <div class="m-hero" id="mHero">
+                  <div class="o" id="mOrt">SCHLINS · VORARLBERG</div>
+                  <div class="n" id="mName">Tischlerei Hartmann</div>
+                  <div class="t" id="mTag">MASSMÖBEL · INNENAUSBAU</div>
+                  <span class="c">Jetzt anfragen</span>
+                </div>
+                <div class="m-srv" id="mSrv"></div>
+                <div class="m-foot"><span class="tl">📞 05XX / XX XX XX</span><span class="fb" id="mFb">Anfrage senden</span></div>
+              </div>
+            </div>
+            <div class="lap-base"></div>
           </div>
-          <div class="pv-srv" id="pvSrv"></div>
-          <div class="pv-foot">
-            <span class="tel">📞 05XX / XX XX XX</span>
-            <span class="fb" id="pvFb">Anfrage senden</span>
+          <div class="phone">
+            <div class="psite" id="pSite">
+              <div class="p-hero" id="pHero">
+                <div class="n" id="pName">Tischlerei Hartmann</div>
+                <div class="t" id="pTag">SCHLINS</div>
+                <span class="c">Anfragen</span>
+              </div>
+              <div class="p-rows" id="pRows"></div>
+              <div class="p-call" id="pCall">📞 Jetzt anrufen</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
     <div class="after reveal">
-      <span class="hand">Gefällt's Ihnen?</span>
+      <span class="hand">und jetzt in groß →</span>
+      <button class="btn demo" id="demoBtn">⛶ Vollbild-Demo ansehen</button>
       <button class="btn primary" id="cfgCta">Genau diese Website anfragen →</button>
     </div>
   </div>
 </section>
+
+<!-- FULLSCREEN DEMO -->
+<div id="demo" role="dialog" aria-label="Website-Demo">
+  <div class="dbar">
+    <i class="r" id="demoCloseDot"></i><i></i><i></i>
+    <span class="url">https://<b id="dUrl">tischlerei-hartmann.at</b></span>
+    <button class="x" id="demoClose">✕ Demo schließen</button>
+  </div>
+  <div class="dscroll" id="dScroll"></div>
+  <div class="dcta">
+    <span class="hand">Gefällt's Ihnen?</span>
+    <button class="btn primary" id="demoCta">Genau so will ich das — € 590 anfragen →</button>
+  </div>
+</div>
 
 <section class="band bp">
   <div class="wrap">
@@ -508,11 +627,11 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
     </div>
     <div class="shots">
       <div class="shot2 reveal">
-        <figure><img class="plx" data-plx="0.06" src="https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=1000&q=72&fm=jpg&fit=crop" alt="Handwerker beim Zuschnitt an der Kappsäge" loading="lazy"></figure>
+        <figure><img class="plx" data-plx="0.06" src="https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1000&q=72&fm=jpg&fit=crop" alt="Holzbau-Arbeiter an Leimbindern" loading="lazy"></figure>
         <figcaption><b>ABB. 01 — IHR HANDWERK</b><span>DAS KÖNNEN SIE</span></figcaption>
       </div>
       <div class="shot2 reveal d1">
-        <figure><img class="plx" data-plx="0.1" src="https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=72&fm=jpg&fit=crop" alt="Akkuschrauber auf der Baustelle" loading="lazy"></figure>
+        <figure><img class="plx" data-plx="0.1" src="https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=800&q=72&fm=jpg&fit=crop" alt="Elektriker bei der Installation" loading="lazy"></figure>
         <figcaption><b>ABB. 02 — IHRE BAUSTELLE</b><span>DA GEHÖREN SIE HIN</span></figcaption>
       </div>
       <div class="shot2 reveal d2">
@@ -630,7 +749,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
       <details class="reveal"><summary>Was kostet die Website nach dem ersten Jahr?</summary><div class="a">Ohne Wartungspaket: nur die Domain-Verlängerung (ca. € 12–15/Jahr, direkt beim Anbieter — die Domain gehört ja Ihnen). Mit Wartungspaket (€ 19/Monat) ist alles abgedeckt, inklusive aller Änderungen.</div></details>
       <details class="reveal"><summary>Wem gehört die Domain (Internet-Adresse)?</summary><div class="a">Ihnen. Wir registrieren sie auf Ihren Namen und Ihre Daten. Falls Sie irgendwann wechseln wollen, nehmen Sie Domain und Website einfach mit — kein Kleingedrucktes.</div></details>
       <details class="reveal"><summary>Ich kenne mich mit Computern nicht aus. Problem?</summary><div class="a">Im Gegenteil — genau dafür sind wir da. Sie müssen nichts bedienen, nichts installieren, nichts lernen. Änderungen schicken Sie als normale Nachricht, alles andere machen wir.</div></details>
-      <details class="reveal"><summary>Ist die Vorschau oben wirklich meine Website?</summary><div class="a">Sie ist der Startpunkt: Layout und Aufbau stimmen, danach passen wir Farben, Fotos, Texte und Leistungen individuell auf Ihren Betrieb an. Der erste echte Entwurf kommt nach 7 Tagen.</div></details>
+      <details class="reveal"><summary>Ist die Vollbild-Demo wirklich meine Website?</summary><div class="a">Sie ist der Startpunkt: Aufbau und Gefühl stimmen, danach passen wir Farben, Fotos, Texte und Leistungen individuell auf Ihren Betrieb an. Der erste echte Entwurf kommt nach 7 Tagen.</div></details>
       <details class="reveal"><summary>Brauche ich als kleiner Betrieb überhaupt eine Website?</summary><div class="a">Über die Hälfte der Kunden sucht Handwerker zuerst im Internet — besonders Zugezogene und Jüngere, die Ihren Betrieb noch nicht kennen. Wer nicht auffindbar ist, existiert für diese Kunden nicht.</div></details>
     </div>
   </div>
@@ -681,32 +800,68 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
 </footer>
 
 <script>
-/* ── trade themes for the live preview ── */
+/* ── trade data ── */
 const TRADES = {
   tischlerei: {label:'Tischlerei', tag:'MASSMÖBEL · INNENAUSBAU · MONTAGE',
-    nav:'#2e1c0c', grad:'linear-gradient(120deg,rgba(46,28,12,.84),rgba(46,28,12,.45))', acc:'#e09a4e',
-    img:'https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=1100&q=70&fm=jpg&fit=crop',
-    srv:[['Maßmöbel','Vom Aufmaß bis zur Montage'],['Innenausbau','Böden, Türen, Wandverbau'],['Reparaturen','Schnell und unkompliziert']]},
+    claim:'Möbel, die bleiben. Handwerk aus {ORT}, gefertigt aufs Zehntel.',
+    nav:'#2e1c0c', grad:'linear-gradient(120deg,rgba(46,28,12,.84),rgba(46,28,12,.42))', acc:'#e09a4e',
+    img:'https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=1400&q=72&fm=jpg&fit=crop',
+    gal:['https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=800&q=68&fm=jpg&fit=crop',
+         'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=68&fm=jpg&fit=crop'],
+    srv:[['Maßmöbel','Vom Aufmaß bis zur Montage — alles aus einer Hand.'],
+         ['Innenausbau','Böden, Türen, Wandverbau. Passgenau in Ihr Zuhause.'],
+         ['Reparaturen','Schnell, unkompliziert, fair verrechnet.']],
+    about:'Seit Generationen steht unser Name in {ORT} für ehrliches Tischlerhandwerk. Jedes Stück wird in unserer Werkstatt gefertigt — kein Katalogware, sondern Maßarbeit für Ihr Zuhause.'},
   installateur: {label:'Installateur', tag:'HEIZUNG · SANITÄR · NOTDIENST',
-    nav:'#0d2530', grad:'linear-gradient(120deg,rgba(10,34,44,.86),rgba(10,34,44,.5))', acc:'#5fb8c9',
-    img:'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=1100&q=70&fm=jpg&fit=crop',
-    srv:[['Heizungstausch','Beratung, Förderung, Einbau'],['Badsanierung','Komplett aus einer Hand'],['24h-Notdienst','Wenn es pressiert']]},
-  elektro: {label:'Elektrotechnik', tag:'INSTALLATION · SMART HOME · PV',
-    nav:'#1d1d26', grad:'linear-gradient(120deg,rgba(24,24,32,.86),rgba(24,24,32,.5))', acc:'#f0c050',
-    img:'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=1100&q=70&fm=jpg&fit=crop',
-    srv:[['Elektroinstallation','Neubau und Sanierung'],['Photovoltaik','Planung bis Netzanschluss'],['Smart Home','Licht, Heizung, Sicherheit']]},
+    claim:'Warm, dicht und verlässlich — Ihr Installateur in {ORT}.',
+    nav:'#0d2530', grad:'linear-gradient(120deg,rgba(10,34,44,.86),rgba(10,34,44,.45))', acc:'#5fb8c9',
+    img:'https://images.unsplash.com/photo-1620626011761-996317b8d101?w=1400&q=72&fm=jpg&fit=crop',
+    gal:['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&q=68&fm=jpg&fit=crop',
+         'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=68&fm=jpg&fit=crop'],
+    srv:[['Heizungstausch','Beratung, Förderung, Einbau — wir kümmern uns.'],
+         ['Badsanierung','Vom alten Bad zum Wohlfühlraum, komplett aus einer Hand.'],
+         ['24h-Notdienst','Wasserschaden? Wir sind da, wenn es pressiert.']],
+    about:'Ob neue Heizung, Badsanierung oder der Notfall am Sonntag: Auf uns ist in {ORT} und Umgebung Verlass — schnell, sauber und zum vereinbarten Preis.'},
+  elektro: {label:'Elektrotechnik', tag:'INSTALLATION · SMART HOME · PHOTOVOLTAIK',
+    claim:'Strom, der sitzt. Elektrotechnik vom Profi in {ORT}.',
+    nav:'#1d1d26', grad:'linear-gradient(120deg,rgba(24,24,32,.86),rgba(24,24,32,.46))', acc:'#f0c050',
+    img:'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=1400&q=72&fm=jpg&fit=crop',
+    gal:['https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=800&q=68&fm=jpg&fit=crop',
+         'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=68&fm=jpg&fit=crop'],
+    srv:[['Elektroinstallation','Neubau und Sanierung, normgerecht und sauber dokumentiert.'],
+         ['Photovoltaik','Von der Planung bis zum Netzanschluss.'],
+         ['Smart Home','Licht, Heizung, Sicherheit — intelligent vernetzt.']],
+    about:'Von der Steckdose bis zur PV-Anlage: Wir planen und installieren Elektrotechnik, auf die Sie sich verlassen können — in {ORT} und im ganzen Land.'},
   zimmerei: {label:'Zimmerei', tag:'HOLZBAU · DACHSTÜHLE · SANIERUNG',
-    nav:'#1f2a1a', grad:'linear-gradient(120deg,rgba(26,36,20,.85),rgba(26,36,20,.5))', acc:'#a8c46a',
-    img:'https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=1100&q=70&fm=jpg&fit=crop',
-    srv:[['Holzbau','Zubau, Aufstockung, Carport'],['Dachstühle','Neu und Sanierung'],['Fassaden','Holz, das Jahrzehnte hält']]},
+    claim:'Holz, das trägt. Zimmererhandwerk aus {ORT}.',
+    nav:'#1f2a1a', grad:'linear-gradient(120deg,rgba(26,36,20,.85),rgba(26,36,20,.46))', acc:'#a8c46a',
+    img:'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=1400&q=72&fm=jpg&fit=crop',
+    gal:['https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=800&q=68&fm=jpg&fit=crop',
+         'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=800&q=68&fm=jpg&fit=crop'],
+    srv:[['Holzbau','Zubau, Aufstockung, Carport — massiv gebaut.'],
+         ['Dachstühle','Neubau und Sanierung, Sturm für Sturm bewährt.'],
+         ['Fassaden','Holzfassaden, die Jahrzehnte halten.']],
+    about:'Im Holz daheim: Unsere Zimmerei in {ORT} baut Dachstühle, Zubauten und Fassaden — Vorarlberger Holzbau, wie er sein soll.'},
   maler: {label:'Malerbetrieb', tag:'FASSADEN · INNENRÄUME · TECHNIKEN',
-    nav:'#33201a', grad:'linear-gradient(120deg,rgba(58,32,24,.85),rgba(58,32,24,.5))', acc:'#e07a5f',
-    img:'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=1100&q=70&fm=jpg&fit=crop',
-    srv:[['Fassaden','Wetterfest und sauber'],['Innenräume','Wände, Decken, Lasuren'],['Spachteltechnik','Das gewisse Extra']]},
+    claim:'Farbe, die wirkt. Ihr Malerbetrieb in {ORT}.',
+    nav:'#33201a', grad:'linear-gradient(120deg,rgba(58,32,24,.85),rgba(58,32,24,.46))', acc:'#e07a5f',
+    img:'https://images.unsplash.com/photo-1562259949-e8e7689d7828?w=1400&q=72&fm=jpg&fit=crop',
+    gal:['https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=800&q=68&fm=jpg&fit=crop',
+         'https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=68&fm=jpg&fit=crop'],
+    srv:[['Fassaden','Wetterfest gestrichen, sauber abgeklebt.'],
+         ['Innenräume','Wände, Decken, Lasuren — präzise bis in die Ecke.'],
+         ['Spachteltechnik','Oberflächen mit dem gewissen Extra.']],
+    about:'Ein frischer Anstrich verändert alles. Wir bringen Farbe an Fassaden und in Innenräume — ordentlich, termintreu und in {ORT} daheim.'},
   dachdecker: {label:'Dachdecker', tag:'EINDECKUNG · SPENGLEREI · REPARATUR',
-    nav:'#26202e', grad:'linear-gradient(120deg,rgba(34,28,44,.86),rgba(34,28,44,.5))', acc:'#b08bd0',
-    img:'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=1100&q=70&fm=jpg&fit=crop',
-    srv:[['Dacheindeckung','Ziegel, Blech, Schiefer'],['Spenglerei','Rinnen und Verblechungen'],['Sturmschäden','Schnelle Hilfe, fair verrechnet']]}
+    claim:'Dicht von First bis Traufe — Ihr Dachdecker in {ORT}.',
+    nav:'#26202e', grad:'linear-gradient(120deg,rgba(34,28,44,.86),rgba(34,28,44,.46))', acc:'#b08bd0',
+    img:'https://images.unsplash.com/photo-1632759145351-1d592919f522?w=1400&q=72&fm=jpg&fit=crop',
+    gal:['https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=68&fm=jpg&fit=crop',
+         'https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=800&q=68&fm=jpg&fit=crop'],
+    srv:[['Dacheindeckung','Ziegel, Blech oder Schiefer — fachgerecht verlegt.'],
+         ['Spenglerei','Rinnen, Kehlen, Verblechungen aus eigener Werkstatt.'],
+         ['Sturmschäden','Schnelle Hilfe, direkt mit der Versicherung abgewickelt.']],
+    about:'Ihr Dach ist unsere Verantwortung: Eindeckung, Spenglerei und Reparaturen vom Meisterbetrieb in {ORT} — sicher, sauber, schnell.'}
 };
 let curTrade = 'tischlerei';
 
@@ -714,6 +869,8 @@ const $id = s => document.getElementById(s);
 const slug = s => s.toLowerCase()
   .replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue').replaceAll('ß','ss')
   .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'ihr-betrieb';
+const getName = () => $id('cfgName').value.trim() || (TRADES[curTrade].label + ' Muster');
+const getOrt = () => $id('cfgOrt').value.trim() || 'Vorarlberg';
 
 function renderTrades(){
   $id('trades').innerHTML = Object.entries(TRADES).map(([k,t]) =>
@@ -724,24 +881,25 @@ function renderTrades(){
 }
 
 function updatePreview(swap){
-  const t = TRADES[curTrade];
-  const name = $id('cfgName').value.trim() || (t.label + ' Muster');
-  const ort = $id('cfgOrt').value.trim() || 'Vorarlberg';
+  const t = TRADES[curTrade], name = getName(), ort = getOrt();
   const apply = () => {
-    $id('pvUrl').textContent = slug(name) + '.at';
-    $id('pvLogo').textContent = name;
-    $id('pvName').textContent = name;
-    $id('pvOrt').textContent = (ort + ' · Vorarlberg').toUpperCase();
-    $id('pvTag').textContent = t.tag;
-    $id('pvHero').style.background = `${t.grad}, url('${t.img}') center/cover`;
-    document.querySelector('.pv-nav').style.background = t.nav;
-    $id('pvFb').style.background = t.acc;
-    $id('pvSrv').innerHTML = t.srv.map(([a,b]) => `<div class="s"><b>${a}</b><span>${b}</span></div>`).join('');
+    $id('mLogo').textContent = name;
+    $id('mName').textContent = name;
+    $id('mOrt').textContent = (ort + ' · Vorarlberg').toUpperCase();
+    $id('mTag').textContent = t.tag;
+    $id('mNav').style.background = t.nav;
+    $id('mHero').style.background = `${t.grad}, url('${t.img}') center/cover`;
+    $id('mFb').style.background = t.acc;
+    $id('mSrv').innerHTML = t.srv.map(([a,b]) => `<div class="s"><b>${a}</b><span>${b}</span></div>`).join('');
+    $id('pName').textContent = name;
+    $id('pTag').textContent = ort.toUpperCase();
+    $id('pHero').style.background = `${t.grad}, url('${t.img}') center/cover`;
+    $id('pRows').innerHTML = t.srv.map(([a]) => `<div class="r">${a}<i>→</i></div>`).join('');
+    $id('pCall').style.background = t.acc;
   };
   if (swap){
-    const site = $id('pvSite');
-    site.classList.add('swap');
-    setTimeout(() => { apply(); site.classList.remove('swap'); }, 220);
+    $id('mSite').classList.add('swap'); $id('pSite').classList.add('swap');
+    setTimeout(() => { apply(); $id('mSite').classList.remove('swap'); $id('pSite').classList.remove('swap'); }, 220);
   } else apply();
 }
 
@@ -749,18 +907,127 @@ renderTrades(); updatePreview(false);
 $id('cfgName').addEventListener('input', () => updatePreview(false));
 $id('cfgOrt').addEventListener('input', () => updatePreview(false));
 
-$id('cfgCta').addEventListener('click', () => {
+function prefillForm(){
   const t = TRADES[curTrade];
-  const name = $id('cfgName').value.trim() || (t.label + ' Muster');
-  const ort = $id('cfgOrt').value.trim() || 'Vorarlberg';
-  $id('f-name').value = name;
-  $id('f-msg').value = `Wir sind ${name} (${t.label}) aus ${ort} und hätten gern eine Website wie in der Vorschau.`;
-  location.hash = '#kontakt';
+  $id('f-name').value = getName();
+  $id('f-msg').value = `Wir sind ${getName()} (${t.label}) aus ${getOrt()} und hätten gern eine Website wie in der Vorschau.`;
+}
+$id('cfgCta').addEventListener('click', () => {
+  prefillForm(); location.hash = '#kontakt';
   setTimeout(() => $id('f-phone').focus(), 600);
 });
 
-/* ── scroll machinery ── */
+/* ── fullscreen demo ── */
+function buildDemo(){
+  const t = TRADES[curTrade], name = getName(), ort = getOrt();
+  const claim = t.claim.replaceAll('{ORT}', ort);
+  const about = t.about.replaceAll('{ORT}', ort);
+  $id('dUrl').textContent = slug(name) + '.at';
+  return `
+  <div class="d-nav" style="background:${t.nav}">
+    <span class="lg">${name}</span>
+    <span class="mm"><span>Leistungen</span><span>Über uns</span><span>Galerie</span><span>Kontakt</span></span>
+    <span class="tel">📞 Jetzt anrufen</span>
+  </div>
+  <div class="d-hero" style="background:${t.grad}, url('${t.img}') center/cover">
+    <div>
+      <div class="o" style="color:${t.acc}">${(ort + ' · VORARLBERG').toUpperCase()}</div>
+      <div class="n">${name}</div>
+      <p class="cl">${claim}</p>
+      <span class="cc">Unverbindlich anfragen</span>
+    </div>
+  </div>
+  <div class="d-sec">
+    <div class="d-eyebrow" style="color:${t.acc}">UNSERE LEISTUNGEN</div>
+    <h2>Was wir für Sie tun</h2>
+    <div class="d-cards">
+      ${t.srv.map((s,i) => `<div class="d-card dreveal" style="transition-delay:${i*0.08}s">
+        <div class="num" style="color:${t.acc}">0${i+1}</div><b>${s[0]}</b><p>${s[1]}</p></div>`).join('')}
+    </div>
+  </div>
+  <div class="d-sec alt">
+    <div class="d-about">
+      <div class="dreveal">
+        <div class="d-eyebrow" style="color:${t.acc}">ÜBER UNS</div>
+        <h2>${name}</h2>
+        <p>${about}</p>
+        <p><b>Unser Versprechen:</b> klare Angebote, saubere Baustellen, und wir heben ab, wenn Sie anrufen.</p>
+      </div>
+      <img class="dreveal" src="${t.gal[0]}" alt="Einblick in die Arbeit" loading="lazy">
+    </div>
+  </div>
+  <div class="d-sec">
+    <div class="d-eyebrow" style="color:${t.acc}">GALERIE</div>
+    <h2>Einblicke in unsere Arbeit</h2>
+    <div class="d-gal">
+      <img class="dreveal" src="${t.img}" alt="Projektfoto" loading="lazy">
+      <img class="dreveal" src="${t.gal[1]}" alt="Projektfoto" loading="lazy">
+    </div>
+  </div>
+  <div class="d-contact" style="background:${t.nav}">
+    <div class="d-eyebrow" style="color:${t.acc}">KONTAKT</div>
+    <h2>Holen Sie sich Ihr Angebot.</h2>
+    <p>Kostenlos und unverbindlich — wir melden uns innerhalb eines Werktags.</p>
+    <span class="cc">📞 05XX / XX XX XX</span>
+  </div>
+  <div class="d-foot">
+    <span>© ${new Date().getFullYear()} ${name} · ${ort}</span>
+    <span>Impressum · Datenschutz</span>
+  </div>`;
+}
+
+let demoIO = null;
+function openDemo(){
+  const sc = $id('dScroll');
+  sc.innerHTML = buildDemo() ;
+  $id('demo').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (demoIO) demoIO.disconnect();
+  demoIO = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting){ e.target.classList.add('in'); demoIO.unobserve(e.target); }
+  }), {root: sc, threshold:.12});
+  sc.querySelectorAll('.dreveal').forEach(el => demoIO.observe(el));
+  sc.scrollTop = 0;
+}
+function closeDemo(){
+  $id('demo').classList.remove('open');
+  document.body.style.overflow = '';
+}
+$id('demoBtn').addEventListener('click', openDemo);
+$id('demoClose').addEventListener('click', closeDemo);
+$id('demoCloseDot').addEventListener('click', closeDemo);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeDemo(); });
+$id('demoCta').addEventListener('click', () => {
+  closeDemo(); prefillForm(); location.hash = '#kontakt';
+  setTimeout(() => $id('f-phone').focus(), 600);
+});
+
+/* ── 3D tilt (mouse) ── */
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const canHover = matchMedia('(hover: hover)').matches;
+function makeTilt(area, target, maxY, maxX){
+  if (reduced || !canHover) return;
+  let tx = 0, ty = 0, cx = 0, cy = 0, raf = null;
+  const step = () => {
+    cx += (tx - cx) * .09; cy += (ty - cy) * .09;
+    target.style.setProperty('--ry', cx.toFixed(2) + 'deg');
+    target.style.setProperty('--rx', cy.toFixed(2) + 'deg');
+    if (Math.abs(tx - cx) > .05 || Math.abs(ty - cy) > .05) raf = requestAnimationFrame(step);
+    else raf = null;
+  };
+  const kick = () => { if (!raf) raf = requestAnimationFrame(step); };
+  area.addEventListener('pointermove', e => {
+    const r = area.getBoundingClientRect();
+    tx = ((e.clientX - r.left) / r.width - .5) * maxY * 2;
+    ty = -((e.clientY - r.top) / r.height - .5) * maxX * 2;
+    kick();
+  });
+  area.addEventListener('pointerleave', () => { tx = 0; ty = 0; kick(); });
+}
+makeTilt($id('heroStage'), $id('heroTilt'), 7, 5);
+makeTilt($id('devices'), $id('devTilt'), 9, 6);
+
+/* ── scroll machinery ── */
 const nav = $id('nav');
 const bar = $id('progress');
 const plx = [...document.querySelectorAll('.plx')];
@@ -771,14 +1038,12 @@ function onScroll(){
   const h = document.documentElement;
   bar.style.width = (scrollY / (h.scrollHeight - innerHeight) * 100) + '%';
   if (reduced) return;
-  // parallax photos
   for (const img of plx){
     const r = img.getBoundingClientRect();
     if (r.bottom < 0 || r.top > innerHeight) continue;
     const c = (r.top + r.height/2 - innerHeight/2) * parseFloat(img.dataset.plx);
     img.style.transform = `translateY(${-c}px) scale(1.12)`;
   }
-  // hero mockup drift
   if (stage){
     const sr = stage.getBoundingClientRect();
     if (sr.bottom > 0) stage.style.transform = `translateY(${scrollY * 0.08}px)`;
@@ -787,23 +1052,25 @@ function onScroll(){
 addEventListener('scroll', () => requestAnimationFrame(onScroll), {passive:true});
 onScroll();
 
-/* reveals + masked titles + timeline */
 const io = new IntersectionObserver(es => es.forEach(e => {
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
 }), {threshold:.14});
 document.querySelectorAll('.reveal,.tstep,.mask,.shot2').forEach(el => io.observe(el));
 
 /* hero counters */
-if (!reduced) document.querySelectorAll('.count').forEach(el => {
-  const to = +el.dataset.to, t0 = performance.now() + 700, dur = 1100;
-  const tick = now => {
-    const p = Math.min(1, Math.max(0, (now - t0) / dur));
-    el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
-    if (p < 1) requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
-});
-else document.querySelectorAll('.count').forEach(el => el.textContent = el.dataset.to);
+if (!reduced) {
+  document.querySelectorAll('.count').forEach(el => {
+    const to = +el.dataset.to, t0 = performance.now() + 700, dur = 1100;
+    const tick = now => {
+      const p = Math.min(1, Math.max(0, (now - t0) / dur));
+      el.textContent = Math.round(to * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+} else {
+  document.querySelectorAll('.count').forEach(el => el.textContent = el.dataset.to);
+}
 
 /* contact form */
 $id('cform').addEventListener('submit', async ev => {
