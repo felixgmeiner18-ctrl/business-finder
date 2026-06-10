@@ -11,7 +11,7 @@
 <meta property="og:url" content="https://handwerkerweb.at/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -28,19 +28,14 @@
 <style>
 /* ── TOKENS ─────────────────────────────────────────────── */
 :root{
-  --ink:#12181d;          /* anthracite base */
-  --ink-2:#1a2229;        /* raised dark surface */
-  --ink-3:#222d36;        /* lines on dark */
-  --paper:#f2f1ec;        /* light section bg */
-  --white:#ffffff;
-  --timber:#e09a4e;       /* wood amber — the accent */
-  --timber-deep:#b9772f;
-  --mist:#9fb1bd;         /* cool gray-blue text on dark */
-  --stone:#5c6b76;        /* muted on light */
-  --line:#dcd9d0;
+  --ink:#12181d; --ink-2:#1a2229; --ink-3:#222d36;
+  --paper:#f2f1ec; --white:#ffffff;
+  --timber:#e09a4e; --timber-deep:#b9772f;
+  --mist:#9fb1bd; --stone:#5c6b76; --line:#dcd9d0;
   --disp:'Archivo',system-ui,sans-serif;
   --body:'Manrope',system-ui,sans-serif;
   --mono:'JetBrains Mono',monospace;
+  --hand:'Caveat',cursive;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -51,18 +46,23 @@ img{max-width:100%;display:block}
 .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
 h1,h2,h3{font-family:var(--disp);line-height:1.04;letter-spacing:-.015em}
 .mono{font-family:var(--mono)}
+.ic{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 
-/* blueprint grid overlay for dark sections */
+/* film grain — kills the flat AI look */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* blueprint grid for dark sections */
 .bp{position:relative}
 .bp::before{content:"";position:absolute;inset:0;pointer-events:none;
   background-image:linear-gradient(rgba(159,177,189,.05) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(159,177,189,.05) 1px,transparent 1px);
   background-size:56px 56px}
 
-/* eyebrow = technical drawing label */
 .eyebrow{font-family:var(--mono);font-size:.72rem;font-weight:500;letter-spacing:.22em;
   text-transform:uppercase;color:var(--timber);display:inline-flex;align-items:center;gap:10px}
 .eyebrow::before{content:"";width:34px;height:1px;background:var(--timber)}
+.hand{font-family:var(--hand);font-size:1.35rem;color:var(--timber);letter-spacing:0;text-transform:none}
 
 /* ── NAV ────────────────────────────────────────────────── */
 nav{position:fixed;top:0;left:0;right:0;z-index:90;transition:background .35s,box-shadow .35s}
@@ -71,10 +71,11 @@ nav .wrap{display:flex;align-items:center;height:72px;gap:28px}
 .logo{font-family:var(--disp);font-weight:900;font-size:1.18rem;letter-spacing:-.02em;text-decoration:none;color:var(--white)}
 .logo b{color:var(--timber)}
 nav .links{margin-left:auto;display:flex;gap:30px;align-items:center;font-size:.9rem;font-weight:600}
-nav .links a{text-decoration:none;color:var(--mist);transition:color .2s;position:relative}
+nav .links a{text-decoration:none;color:var(--mist);transition:color .2s}
 nav .links a:hover{color:var(--white)}
-.navcall{background:var(--timber);color:var(--ink) !important;padding:11px 22px;border-radius:99px;font-weight:800;transition:transform .2s,background .2s}
+.navcall{background:var(--timber);color:var(--ink) !important;padding:11px 22px;border-radius:99px;font-weight:800;transition:transform .2s,background .2s;display:inline-flex;align-items:center;gap:8px}
 .navcall:hover{background:#f0ad62;transform:translateY(-1px)}
+.navcall .ic{width:16px;height:16px;stroke-width:2}
 @media(max-width:800px){nav .links a:not(.navcall){display:none}}
 
 /* ── HERO ───────────────────────────────────────────────── */
@@ -95,6 +96,7 @@ nav .links a:hover{color:var(--white)}
 .cta-row{display:flex;gap:14px;flex-wrap:wrap;opacity:0;animation:fade .8s ease .65s forwards}
 .btn{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-family:var(--disp);
   border-radius:14px;padding:17px 32px;font-size:1rem;transition:transform .2s,box-shadow .2s,background .2s;border:0;cursor:pointer}
+.btn .ic{width:18px;height:18px;stroke-width:2}
 .btn.primary{background:var(--timber);color:var(--ink);box-shadow:0 10px 34px rgba(224,154,78,.3)}
 .btn.primary:hover{transform:translateY(-2px);background:#f0ad62}
 .btn.ghost{border:1.5px solid var(--ink-3);color:var(--paper)}
@@ -104,10 +106,10 @@ nav .links a:hover{color:var(--white)}
 .hero .meta b{display:block;font-family:var(--disp);font-size:1.55rem;color:var(--paper);letter-spacing:0}
 .hero .meta b i{color:var(--timber);font-style:normal}
 
-/* hero mockup — assembles itself like a workpiece */
+/* hero mockup — assembles itself */
 .stage{position:relative;perspective:1200px}
 .dim{position:absolute;font-family:var(--mono);font-size:.66rem;color:var(--stone);letter-spacing:.08em;white-space:nowrap}
-.dim::before,.dim::after{content:"";position:absolute;background:var(--ink-3)}
+.dim::before{content:"";position:absolute;background:var(--ink-3)}
 .dim.top{top:-26px;left:0;right:0;text-align:center}
 .dim.top::before{left:0;right:0;top:50%;height:1px}
 .dim.top span{background:var(--ink);position:relative;padding:0 12px}
@@ -122,13 +124,14 @@ nav .links a:hover{color:var(--white)}
 .browser .bar .url{margin-left:10px;background:var(--ink);border:1px solid var(--ink-3);border-radius:7px;
   font-family:var(--mono);font-size:.68rem;color:var(--stone);padding:4px 14px;flex:1}
 .browser .url b{color:var(--timber);font-weight:500}
-.asm{padding:0}
 .asm>*{opacity:0;transform:translateY(16px);animation:build .6s cubic-bezier(.2,.7,.2,1) forwards}
 .asm .a1{animation-delay:1.0s}.asm .a2{animation-delay:1.25s}.asm .a3{animation-delay:1.5s}.asm .a4{animation-delay:1.75s}
 @keyframes build{to{opacity:1;transform:none}}
-.asm .shero{background:linear-gradient(135deg,#27445f,#3d6a8f);padding:30px 28px;color:#fff}
+.asm .shero{position:relative;padding:34px 28px;color:#fff;background:
+  linear-gradient(115deg,rgba(14,26,34,.88) 30%,rgba(14,26,34,.45)),
+  url('https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=900&q=70&fm=jpg&fit=crop') center/cover}
 .asm .shero .k{font-family:var(--disp);font-weight:800;font-size:1.3rem}
-.asm .shero .l{font-family:var(--mono);font-size:.68rem;opacity:.75;margin-top:6px;letter-spacing:.08em}
+.asm .shero .l{font-family:var(--mono);font-size:.68rem;opacity:.8;margin-top:6px;letter-spacing:.08em}
 .asm .shero .b{display:inline-block;background:var(--timber);color:var(--ink);border-radius:8px;
   font-size:.74rem;font-weight:800;padding:7px 16px;margin-top:16px}
 .asm .row{display:flex;gap:12px;padding:18px 28px 6px}
@@ -147,21 +150,43 @@ nav .links a:hover{color:var(--white)}
 
 /* ── MARQUEE ────────────────────────────────────────────── */
 .marquee{border-top:1px solid var(--ink-3);border-bottom:1px solid var(--ink-3);padding:20px 0;overflow:hidden;background:var(--ink-2)}
-.marquee .track{display:flex;gap:0;width:max-content;animation:scroll 36s linear infinite}
+.marquee .track{display:flex;width:max-content;animation:scroll 36s linear infinite}
 .marquee span{font-family:var(--disp);font-weight:800;font-size:1.05rem;text-transform:uppercase;
   letter-spacing:.06em;color:var(--stone);padding:0 28px;white-space:nowrap}
 .marquee span i{color:var(--timber);font-style:normal;padding-right:56px}
 @keyframes scroll{to{transform:translateX(-50%)}}
-@media(prefers-reduced-motion:reduce){.marquee .track{animation:none}}
+
+/* ── PHOTO BAND — real work, documentation style ───────── */
+.band{padding:110px 0 90px}
+.band .head{max-width:36rem;margin-bottom:54px}
+.band h2{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:900;text-transform:uppercase;color:var(--white);margin-top:16px}
+.band h2 em{font-style:normal;color:var(--timber)}
+.shots{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:22px;align-items:start}
+@media(max-width:860px){.shots{grid-template-columns:1fr}}
+.shot2{position:relative}
+.shot2:nth-child(2){margin-top:46px}
+.shot2:nth-child(3){margin-top:92px}
+@media(max-width:860px){.shot2:nth-child(2),.shot2:nth-child(3){margin-top:0}}
+.shot2 figure{position:relative;border-radius:4px;overflow:hidden;margin:0}
+.shot2 img{width:100%;height:340px;object-fit:cover;filter:saturate(.82) contrast(1.06);transition:transform .5s ease,filter .5s}
+.shot2:hover img{transform:scale(1.03);filter:saturate(1) contrast(1.04)}
+.shot2 figure::before{content:"";position:absolute;top:10px;left:10px;width:26px;height:26px;
+  border-top:2px solid var(--timber);border-left:2px solid var(--timber);z-index:2}
+.shot2 figure::after{content:"";position:absolute;bottom:10px;right:10px;width:26px;height:26px;
+  border-bottom:2px solid var(--timber);border-right:2px solid var(--timber);z-index:2}
+.shot2 figcaption{display:flex;justify-content:space-between;margin-top:12px;font-family:var(--mono);
+  font-size:.66rem;letter-spacing:.1em;color:var(--stone)}
+.shot2 figcaption b{color:var(--mist);font-weight:500}
 
 /* ── USP ────────────────────────────────────────────────── */
 .usp{padding:110px 0}
 .usp h2{font-size:clamp(2rem,4.6vw,3.4rem);font-weight:900;text-transform:uppercase;color:var(--white);margin:18px 0 16px;max-width:36rem}
 .usp h2 em{font-style:normal;color:var(--timber)}
-.usp .lead{color:var(--mist);max-width:37rem;font-size:1.12rem;margin-bottom:54px}
+.usp .lead{color:var(--mist);max-width:37rem;font-size:1.12rem;margin-bottom:14px}
+.usp .note-hand{margin-bottom:40px;transform:rotate(-1.2deg);display:inline-block}
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--ink-3);border:1px solid var(--ink-3);border-radius:18px;overflow:hidden}
 @media(max-width:820px){.steps{grid-template-columns:1fr}}
-.step{background:var(--ink-2);padding:34px 30px;position:relative;transition:background .25s}
+.step{background:var(--ink-2);padding:34px 30px;transition:background .25s}
 .step:hover{background:#1f2933}
 .step .n{font-family:var(--mono);font-size:.7rem;color:var(--timber);letter-spacing:.18em}
 .step h3{color:var(--white);font-size:1.25rem;font-weight:800;margin:14px 0 10px}
@@ -176,40 +201,62 @@ nav .links a:hover{color:var(--white)}
 .light .eyebrow{color:var(--timber-deep)}
 .light .eyebrow::before{background:var(--timber-deep)}
 
-/* features */
+/* features — bento, asymmetric */
 .features{padding:110px 0}
-.features .head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:56px}
+.features .head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:54px}
 @media(max-width:820px){.features .head{grid-template-columns:1fr}}
 .features .head p{color:var(--stone);font-size:1.05rem}
-.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-@media(max-width:920px){.fgrid{grid-template-columns:1fr 1fr}}
-@media(max-width:620px){.fgrid{grid-template-columns:1fr}}
+.bento{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:920px){.bento{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.bento{grid-template-columns:1fr}}
 .feat{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:30px 28px;
   transition:transform .25s,box-shadow .25s}
 .feat:hover{transform:translateY(-5px);box-shadow:0 22px 50px rgba(18,24,29,.1)}
-.feat .ic{width:46px;height:46px;border-radius:12px;background:var(--ink);color:var(--timber);
-  display:flex;align-items:center;justify-content:center;font-size:1.25rem}
+.feat .fic{width:48px;height:48px;border-radius:12px;background:var(--ink);color:var(--timber);
+  display:flex;align-items:center;justify-content:center}
 .feat h3{font-size:1.12rem;font-weight:800;margin:18px 0 8px;text-transform:none;letter-spacing:0}
 .feat p{font-size:.93rem;color:var(--stone)}
+.feat.photo{grid-column:span 2;position:relative;overflow:hidden;border:0;min-height:280px;
+  display:flex;align-items:flex-end;padding:30px;color:#fff;
+  background:linear-gradient(10deg,rgba(14,22,28,.86) 22%,rgba(14,22,28,.18) 65%),
+  url('https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=1100&q=70&fm=jpg&fit=crop') center/cover}
+@media(max-width:620px){.feat.photo{grid-column:span 1}}
+.feat.photo h3{color:#fff;font-size:1.5rem;margin:0 0 6px}
+.feat.photo p{color:#c8d4dc;max-width:26rem}
+.feat.photo .mono-tag{position:absolute;top:18px;left:20px;font-family:var(--mono);font-size:.64rem;
+  letter-spacing:.14em;color:#fff;background:rgba(18,24,29,.55);backdrop-filter:blur(4px);
+  padding:6px 12px;border-radius:7px;border:1px solid rgba(255,255,255,.14)}
+.feat.wide{grid-column:span 3;display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;
+  background:var(--ink);color:var(--paper);border:0}
+@media(max-width:920px){.feat.wide{grid-column:span 2}}
+@media(max-width:620px){.feat.wide{grid-column:span 1;grid-template-columns:1fr}}
+.feat.wide h3{color:var(--white)}
+.feat.wide p{color:var(--mist)}
+.feat.wide .fic{background:var(--timber);color:var(--ink)}
 
-/* examples */
+/* examples — staggered */
 .examples{padding:110px 0;background:#e9e7e0}
 .exgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:54px}
 @media(max-width:920px){.exgrid{grid-template-columns:1fr}}
-.ex{cursor:default}
+.ex:nth-child(2){margin-top:42px}
+.ex:nth-child(3){margin-top:84px}
+@media(max-width:920px){.ex:nth-child(2),.ex:nth-child(3){margin-top:0}}
 .ex .shot{background:var(--white);border:1px solid var(--line);border-radius:16px;overflow:hidden;
   box-shadow:0 10px 30px rgba(18,24,29,.08);transition:transform .3s,box-shadow .3s}
 .ex:hover .shot{transform:translateY(-8px) rotate(-.5deg);box-shadow:0 30px 60px rgba(18,24,29,.16)}
 .ex .sbar{display:flex;gap:6px;align-items:center;background:#f0eee8;padding:10px 14px;border-bottom:1px solid var(--line)}
 .ex .sbar i{width:9px;height:9px;border-radius:50%;background:#d5d1c6}
 .ex .sbar .u{margin-left:8px;font-family:var(--mono);font-size:.64rem;color:var(--stone)}
-.ex .sh{padding:26px 22px;color:#fff}
-.ex .sh.v1{background:linear-gradient(135deg,#5e3c1e,#8a5c2e)}
-.ex .sh.v2{background:linear-gradient(135deg,#16323c,#27545f)}
-.ex .sh.v3{background:linear-gradient(135deg,#2c2c34,#4a4a58)}
+.ex .sh{padding:26px 22px;color:#fff;position:relative}
+.ex .sh.v1{background:linear-gradient(120deg,rgba(46,28,12,.82),rgba(46,28,12,.5)),
+  url('https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=700&q=60&fm=jpg&fit=crop') center/cover}
+.ex .sh.v2{background:linear-gradient(120deg,rgba(10,34,44,.85),rgba(10,34,44,.55)),
+  url('https://images.unsplash.com/photo-1504148455328-c376907d081c?w=700&q=60&fm=jpg&fit=crop') center/cover}
+.ex .sh.v3{background:linear-gradient(120deg,rgba(24,24,30,.85),rgba(24,24,30,.55)),
+  url('https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=700&q=60&fm=jpg&fit=crop') center/cover}
 .ex .sh .k{font-family:var(--disp);font-weight:800;font-size:1.1rem}
-.ex .sh .l{font-family:var(--mono);font-size:.62rem;opacity:.8;margin-top:5px;letter-spacing:.06em}
-.ex .sh .b{display:inline-block;background:rgba(255,255,255,.92);color:var(--ink);border-radius:7px;font-size:.68rem;font-weight:800;padding:6px 13px;margin-top:13px}
+.ex .sh .l{font-family:var(--mono);font-size:.62rem;opacity:.85;margin-top:5px;letter-spacing:.06em}
+.ex .sh .b{display:inline-block;background:rgba(255,255,255,.94);color:var(--ink);border-radius:7px;font-size:.68rem;font-weight:800;padding:6px 13px;margin-top:13px}
 .ex .srow{display:flex;gap:9px;padding:14px 22px 18px}
 .ex .sc{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:7px;height:44px}
 .ex .cap{margin-top:14px;display:flex;justify-content:space-between;align-items:baseline}
@@ -231,7 +278,7 @@ nav .links a:hover{color:var(--white)}
 
 /* ── PRICING ────────────────────────────────────────────── */
 .pricing{padding:110px 0}
-.pcards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:54px;max-width:880px;margin-left:auto;margin-right:auto}
+.pcards{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:54px;max-width:880px;margin-left:auto;margin-right:auto;position:relative}
 @media(max-width:780px){.pcards{grid-template-columns:1fr}}
 .price{background:var(--white);border:1px solid var(--line);border-radius:22px;padding:40px 36px;position:relative;
   transition:transform .25s,box-shadow .25s}
@@ -253,6 +300,8 @@ nav .links a:hover{color:var(--white)}
 .price li b{color:var(--ink)}
 .price.hot li b{color:var(--paper)}
 .price .note{margin-top:18px;font-family:var(--mono);font-size:.7rem;color:var(--stone);letter-spacing:.03em}
+.price-hand{position:absolute;top:-52px;right:-8px;transform:rotate(3deg);color:var(--timber-deep)}
+@media(max-width:780px){.price-hand{display:none}}
 
 /* ── FAQ ────────────────────────────────────────────────── */
 .faq{padding:110px 0;background:#e9e7e0}
@@ -300,10 +349,23 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
   .reveal,.hero h1 .ln span,.hero .sub,.cta-row,.hero .meta,.asm>*,.stamp{opacity:1;transform:none}
+  .marquee .track{animation:none !important}
 }
 </style>
 </head>
 <body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-tag"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V5a2 2 0 0 1 2-2h8l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.8" cy="7.8" r="1.4"/></g>
+    <g id="i-phone-h"><rect x="7" y="2" width="10" height="20" rx="2.4"/><path d="M11 18h2"/></g>
+    <g id="i-search"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.4-4.4"/></g>
+    <g id="i-mail"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7.5 9 6 9-6"/></g>
+    <g id="i-wrench"><path d="M14.7 6.3a4.6 4.6 0 0 0-6 6L3 18l3 3 5.7-5.7a4.6 4.6 0 0 0 6-6l-3 3-2.5-.5-.5-2.5 3-3z"/></g>
+    <g id="i-call"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.13.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.34 1.85.57 2.8.7a2 2 0 0 1 1.7 2z"/></g>
+    <g id="i-msg"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3a8.5 8.5 0 0 1 8.5 8.5z"/></g>
+  </defs>
+</svg>
 
 <nav id="nav">
   <div class="wrap">
@@ -313,7 +375,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
       <a href="#beispiele">Beispiele</a>
       <a href="#preis">Preis</a>
       <a href="#fragen">Fragen</a>
-      <a class="navcall" href="tel:+436766505015">0676 650 50 15</a>
+      <a class="navcall" href="tel:+436766505015"><svg class="ic"><use href="#i-call"/></svg>0676 650 50 15</a>
     </div>
   </div>
 </nav>
@@ -330,7 +392,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
       <p class="sub">Über die Hälfte Ihrer Kunden sucht zuerst im Internet. Wer dort nicht zu finden ist, verliert Aufträge an den Mitbewerb — <b>jeden Tag</b>. Wir bauen Ihren Auftritt: präzise, zum Festpreis, ohne Technik-Stress für Sie.</p>
       <div class="cta-row">
         <a class="btn primary" href="#kontakt">Unverbindlich anfragen</a>
-        <a class="btn ghost" href="tel:+436766505015">📞 Anrufen</a>
+        <a class="btn ghost" href="tel:+436766505015"><svg class="ic"><use href="#i-call"/></svg>Anrufen</a>
       </div>
       <div class="meta">
         <div><b>€ 590<i>,–</i></b>FESTPREIS, EINMALIG</div>
@@ -345,8 +407,8 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
         <div class="bar"><i></i><i></i><i></i><span class="url">https://<b>ihr-betrieb.at</b></span></div>
         <div class="asm">
           <div class="shero a1">
-            <div class="k">Installationen Muster</div>
-            <div class="l">HEIZUNG · SANITÄR · NOTDIENST</div>
+            <div class="k">Zimmerei am Walgau</div>
+            <div class="l">HOLZBAU · DACHSTÜHLE · SANIERUNG</div>
             <div class="b a2" style="animation-delay:1.4s">Jetzt anfragen</div>
           </div>
           <div class="row a3"><div class="card"></div><div class="card"></div><div class="card"></div></div>
@@ -365,11 +427,35 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
   </div>
 </div>
 
-<section class="usp bp" id="aenderungen">
+<section class="band bp">
+  <div class="wrap">
+    <div class="head">
+      <span class="eyebrow">Für wen wir bauen</span>
+      <h2 class="reveal">Websites für Leute,<br>die <em>anpacken.</em></h2>
+    </div>
+    <div class="shots">
+      <div class="shot2 reveal">
+        <figure><img src="https://images.unsplash.com/photo-1505798577917-a65157d3320a?w=1000&q=72&fm=jpg&fit=crop" alt="Handwerker beim Zuschnitt an der Kappsäge" loading="lazy"></figure>
+        <figcaption><b>ABB. 01 — IHR HANDWERK</b><span>DAS KÖNNEN SIE</span></figcaption>
+      </div>
+      <div class="shot2 reveal d1">
+        <figure><img src="https://images.unsplash.com/photo-1504148455328-c376907d081c?w=800&q=72&fm=jpg&fit=crop" alt="Akkuschrauber auf der Baustelle" loading="lazy"></figure>
+        <figcaption><b>ABB. 02 — IHRE BAUSTELLE</b><span>DA GEHÖREN SIE HIN</span></figcaption>
+      </div>
+      <div class="shot2 reveal d2">
+        <figure><img src="https://images.unsplash.com/photo-1530124566582-a618bc2615dc?w=800&q=72&fm=jpg&fit=crop" alt="Werkzeugwand in einer Werkstatt" loading="lazy"></figure>
+        <figcaption><b>ABB. 03 — UNSER WERKZEUG</b><span>DIE WEBSITE ÜBERNEHMEN WIR</span></figcaption>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="usp bp" id="aenderungen" style="padding-top:40px">
   <div class="wrap">
     <span class="eyebrow">Das gibt es nur hier</span>
     <h2 class="reveal">Änderungen?<br><em>Eine Nachricht genügt.</em></h2>
     <p class="lead reveal">Neue Öffnungszeiten, Betriebsurlaub, frische Fotos von der Baustelle — Sie schreiben uns wie einem Kollegen. Kein Programm lernen, kein Techniker-Termin, kein Stundensatz.</p>
+    <span class="hand note-hand reveal d1">↓ so einfach ist das wirklich</span>
     <div class="steps">
       <div class="step reveal"><div class="n">SCHRITT 01</div><h3>Sie schreiben uns</h3><p>Per WhatsApp oder E-Mail — so wie Sie es jeden Tag tun.</p>
         <div class="ex">„Ab August samstags geschlossen."</div></div>
@@ -389,30 +475,39 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
         <span class="eyebrow">Leistungsumfang</span>
         <h2 class="reveal" style="margin-top:16px">Alles drin.<br>Nichts versteckt.</h2>
       </div>
-      <p class="reveal d1">Eine Handwerker-Website braucht keine Spielereien — sie muss gefunden werden, gut aussehen und Anfragen bringen. Genau das liefern wir, komplett eingerichtet.</p>
+      <p class="reveal d1">Eine Handwerker-Website braucht keine Spielereien — sie muss gefunden werden, gut aussehen und Anfragen bringen. Von Bregenz bis Bludenz, komplett eingerichtet.</p>
     </div>
-    <div class="fgrid">
-      <div class="feat reveal"><div class="ic">🌐</div><h3>Eigene .at-Domain</h3><p>Registriert auf <b>Ihren Namen</b> — die Adresse gehört Ihnen, nicht uns. Für immer.</p></div>
-      <div class="feat reveal d1"><div class="ic">📱</div><h3>Perfekt am Handy</h3><p>Ihre Kunden suchen am Smartphone. Dort muss die Seite sitzen — und tut sie.</p></div>
-      <div class="feat reveal d2"><div class="ic">🔍</div><h3>Bei Google auffindbar</h3><p>Technisch sauber aufgebaut, damit man Sie findet: „Installateur + Ihr Ort".</p></div>
-      <div class="feat reveal"><div class="ic">✉️</div><h3>Anfragen ins Postfach</h3><p>Kunden schreiben direkt von der Website — die Anfrage landet in Ihrer E-Mail.</p></div>
-      <div class="feat reveal d1"><div class="ic">🔒</div><h3>Sicher &amp; schnell</h3><p>SSL-Verschlüsselung, schnelle Ladezeiten, zuverlässiges Hosting. Standard bei uns.</p></div>
-      <div class="feat reveal d2"><div class="ic">🤝</div><h3>Rundum erledigt</h3><p>Domain, Technik, Texte nach Ihren Angaben. Sie liefern Fotos &amp; Infos — wir den Rest.</p></div>
+    <div class="bento">
+      <div class="feat photo reveal">
+        <span class="mono-tag">WERKSTATT-PRINZIP</span>
+        <div>
+          <h3>Ordentliches Werkzeug, ordentliche Arbeit.</h3>
+          <p>Saubere Technik unter der Haube: schnelle Ladezeiten, SSL-Verschlüsselung, zuverlässiges Hosting. Sie sehen davon nichts — Ihre Kunden spüren es.</p>
+        </div>
+      </div>
+      <div class="feat reveal d1"><div class="fic"><svg class="ic"><use href="#i-tag"/></svg></div><h3>Eigene .at-Domain</h3><p>Registriert auf <b>Ihren Namen</b> — die Adresse gehört Ihnen, nicht uns. Für immer.</p></div>
+      <div class="feat reveal"><div class="fic"><svg class="ic"><use href="#i-phone-h"/></svg></div><h3>Perfekt am Handy</h3><p>Ihre Kunden suchen am Smartphone. Dort muss die Seite sitzen — und tut sie.</p></div>
+      <div class="feat reveal d1"><div class="fic"><svg class="ic"><use href="#i-search"/></svg></div><h3>Bei Google auffindbar</h3><p>Technisch sauber aufgebaut, damit man Sie findet: „Installateur + Ihr Ort".</p></div>
+      <div class="feat reveal d2"><div class="fic"><svg class="ic"><use href="#i-mail"/></svg></div><h3>Anfragen ins Postfach</h3><p>Kunden schreiben direkt von der Website — die Anfrage landet in Ihrer E-Mail.</p></div>
+      <div class="feat wide reveal">
+        <div class="fic"><svg class="ic"><use href="#i-wrench"/></svg></div>
+        <div><h3>Rundum erledigt</h3><p>Domain, Technik, Texte nach Ihren Angaben, Einrichtung, Google-Eintrag — Sie liefern Fotos und ein paar Infos, wir kümmern uns um den ganzen Rest. Versprochen ist versprochen.</p></div>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="examples light" id="beispiele">
   <div class="wrap">
-    <div style="text-align:center">
-      <span class="eyebrow" style="justify-content:center">Beispiele</span>
+    <div style="max-width:36rem">
+      <span class="eyebrow">Beispiele</span>
       <h2 class="reveal" style="margin-top:16px">So kann Ihre Seite aussehen</h2>
     </div>
     <div class="exgrid">
       <div class="ex reveal">
         <div class="shot">
           <div class="sbar"><i></i><i></i><i></i><span class="u">tischlerei-beispiel.at</span></div>
-          <div class="sh v1"><div class="k">Tischlerei Beispiel</div><div class="l">MASSMÖBEL · INNENAUSBAU</div><div class="b">Jetzt anfragen</div></div>
+          <div class="sh v1"><div class="k">Tischlerei am Walgau</div><div class="l">MASSMÖBEL · INNENAUSBAU</div><div class="b">Jetzt anfragen</div></div>
           <div class="srow"><div class="sc"></div><div class="sc"></div><div class="sc"></div></div>
         </div>
         <div class="cap"><b>„Holz &amp; Handwerk"</b><span>MUSTER 01</span></div>
@@ -420,7 +515,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
       <div class="ex reveal d1">
         <div class="shot">
           <div class="sbar"><i></i><i></i><i></i><span class="u">installateur-beispiel.at</span></div>
-          <div class="sh v2"><div class="k">Installationen Muster</div><div class="l">HEIZUNG · SANITÄR · NOTDIENST</div><div class="b">24h-Notruf</div></div>
+          <div class="sh v2"><div class="k">Installationen Rheintal</div><div class="l">HEIZUNG · SANITÄR · NOTDIENST</div><div class="b">24h-Notruf</div></div>
           <div class="srow"><div class="sc"></div><div class="sc"></div><div class="sc"></div></div>
         </div>
         <div class="cap"><b>„Verlässlich"</b><span>MUSTER 02</span></div>
@@ -428,7 +523,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
       <div class="ex reveal d2">
         <div class="shot">
           <div class="sbar"><i></i><i></i><i></i><span class="u">elektro-beispiel.at</span></div>
-          <div class="sh v3"><div class="k">Elektrotechnik Muster</div><div class="l">INSTALLATION · SMART HOME · PV</div><div class="b">Termin sichern</div></div>
+          <div class="sh v3"><div class="k">Elektro Montafon</div><div class="l">INSTALLATION · SMART HOME · PV</div><div class="b">Termin sichern</div></div>
           <div class="srow"><div class="sc"></div><div class="sc"></div><div class="sc"></div></div>
         </div>
         <div class="cap"><b>„Klar &amp; Modern"</b><span>MUSTER 03</span></div>
@@ -458,6 +553,7 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
       <h2 class="reveal" style="margin-top:16px">Ein Festpreis.<br>Keine Überraschungen.</h2>
     </div>
     <div class="pcards">
+      <span class="hand price-hand reveal">rechnet sich ab der ersten Änderung →</span>
       <div class="price reveal">
         <h3>Ihre Website</h3>
         <div class="amount">€ 590<small> EINMALIG</small></div>
@@ -542,23 +638,20 @@ footer b{color:var(--paper);font-family:var(--mono);font-size:.7rem;letter-spaci
     </div>
     <div style="max-width:300px">
       <b>Hinweis</b>
-      Alle Preise sind Endpreise (Kleinunternehmerregelung, keine USt.-Ausweisung). Musterdesigns dienen der Veranschaulichung.
+      Alle Preise sind Endpreise (Kleinunternehmerregelung, keine USt.-Ausweisung). Musterdesigns dienen der Veranschaulichung. Fotos: Unsplash.
     </div>
   </div>
 </footer>
 
 <script>
-// nav background on scroll
 const nav = document.getElementById('nav');
 addEventListener('scroll', () => nav.classList.toggle('scrolled', scrollY > 24), {passive:true});
 
-// scroll reveals (also drives the process timeline fill)
 const io = new IntersectionObserver(es => es.forEach(e => {
   if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
 }), {threshold:.14});
 document.querySelectorAll('.reveal,.tstep').forEach(el => io.observe(el));
 
-// contact form → /api/contact (same backend as the letter landers)
 document.getElementById('cform').addEventListener('submit', async ev => {
   ev.preventDefault();
   const msg = document.getElementById('formMsg');
