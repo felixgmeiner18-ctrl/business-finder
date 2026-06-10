@@ -5,6 +5,7 @@ import os
 import re
 import secrets
 import threading
+import time
 import warnings
 import zipfile
 from contextlib import asynccontextmanager
@@ -245,8 +246,81 @@ def run_queue(regions: list[str], niche: str | None = None):
     _search_state["queue_done"] = 0
 
 
+_BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
+_SKIP_DOMAINS = {"google", "brave", "bing", "yahoo", "duckduckgo"}
+
+
+def _check_website_brave(name: str, region: str, api_key: str) -> dict:
+    """Search Brave for the business. Returns has_website, url, and exists.
+
+    exists=False means zero search results mention the business name at all —
+    a strong signal the OSM entry is a phantom (no real company behind it).
+    exists=None means the API call failed and we can't tell.
+
+    Free tier: 2,000 queries/month. Brave does not block datacenter IPs.
+    Set BRAVE_API_KEY in Railway environment variables.
+    """
+    query = f'"{name}" {region}'
+    try:
+        resp = httpx.get(
+            _BRAVE_SEARCH_URL,
+            params={"q": query, "count": 5, "country": "AT", "search_lang": "de"},
+            headers={
+                "Accept": "application/json",
+                "Accept-Encoding": "gzip",
+                "X-Subscription-Token": api_key,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except Exception as e:
+        return {"has_website": False, "url": None, "exists": None, "error": str(e)}
+
+    results = resp.json().get("web", {}).get("results", [])
+
+    if not results:
+        # No search results at all → likely a phantom OSM entry
+        return {"has_website": False, "url": None, "exists": False, "error": None}
+
+    # Existence signal: does any result title/snippet mention the business name?
+    name_lower = name.lower()
+    exists = any(
+        name_lower in r.get("title", "").lower()
+        or name_lower in r.get("description", "").lower()
+        for r in results
+    )
+
+    # Website signal: first result whose domain isn't a known directory/search engine
+    found_url = None
+    for r in results:
+        url = r.get("url", "")
+        m = re.match(r"https?://(?:www\.)?([^/]+)", url)
+        if not m:
+            continue
+        domain = m.group(1).lower()
+        if any(d in domain for d in DIRECTORY_DOMAINS):
+            continue
+        if any(s in domain for s in _SKIP_DOMAINS):
+            continue
+        found_url = url
+        break
+
+    return {
+        "has_website": bool(found_url),
+        "url": found_url,
+        "exists": exists,
+        "error": None,
+    }
+
+
 def _check_website(name: str, region: str) -> dict:
-    """Search Google for the business and check if it has a real website."""
+    """Fallback: scrape Google for the business website.
+
+    WARNING: Broken on Railway — Google blocks datacenter IPs with CAPTCHAs.
+    Only used when BRAVE_API_KEY is not set. Set BRAVE_API_KEY to use the
+    reliable Brave Search API instead. See iteration log:
+    [[08 Iteration Logs/(C) 2026-04-23 verifier broken]]
+    """
     query = f'"{name}" {region}'
     try:
         with warnings.catch_warnings():
@@ -264,31 +338,25 @@ def _check_website(name: str, region: str) -> dict:
             )
         resp.raise_for_status()
     except Exception as e:
-        return {"has_website": False, "url": None, "error": str(e)}
+        return {"has_website": False, "url": None, "exists": None, "error": str(e)}
 
     html = resp.text
-    # Extract URLs from Google results
     urls = re.findall(r'https?://[^\s"<>]+', html)
 
     for url in urls:
-        # Extract domain
-        match = re.match(r'https?://(?:www\.)?([^/]+)', url)
-        if not match:
+        m = re.match(r'https?://(?:www\.)?([^/]+)', url)
+        if not m:
             continue
-        domain = match.group(1).lower()
-
-        # Skip known directories and Google's own URLs
+        domain = m.group(1).lower()
         if any(d in domain for d in DIRECTORY_DOMAINS):
             continue
         if "google" in domain:
             continue
-
-        # Looks like a real business website
         clean_url = re.match(r'(https?://[^&"]+)', url)
         if clean_url:
-            return {"has_website": True, "url": clean_url.group(1)}
+            return {"has_website": True, "url": clean_url.group(1), "exists": None}
 
-    return {"has_website": False, "url": None}
+    return {"has_website": False, "url": None, "exists": None}
 
 
 AUTH_USER = os.environ.get("AUTH_USER", "admin")
@@ -541,23 +609,71 @@ def update(business_id: int, payload: UpdatePayload):
     return {"ok": True}
 
 
+def _verify_one(biz: dict) -> dict:
+    """Verify a single business: Brave API when BRAVE_API_KEY is set
+    (reliable + phantom detection), Google scrape as legacy fallback.
+    Updates the DB row according to the result."""
+    api_key = os.environ.get("BRAVE_API_KEY", "")
+    if api_key:
+        result = _check_website_brave(biz["name"], biz.get("region", ""), api_key)
+        result["checker"] = "brave"
+    else:
+        result = _check_website(biz["name"], biz.get("region", ""))
+        result["checker"] = "google-fallback"
+
+    if result.get("error"):
+        return result  # API failure — don't touch the row, we can't tell
+
+    if result.get("has_website") and result.get("url"):
+        update_business(biz["id"], status="Has Website",
+                        website_url=result["url"])
+    elif result.get("exists") is False:
+        update_business(biz["id"], status="Phantom",
+                        notes="Auto: zero search results — likely OSM phantom "
+                              "(verify-batch)")
+    return result
+
+
 @app.post("/businesses/{business_id}/verify")
 def verify_website(business_id: int):
-    """Check if a business now has a website via Google search."""
+    """Verify one business (website + existence). Brave API preferred."""
     biz = get_business(business_id)
     if not biz:
         raise HTTPException(404, "Business not found")
+    return _verify_one(dict(biz))
 
-    result = _check_website(biz["name"], biz.get("region", ""))
 
-    if result.get("has_website") and result.get("url"):
-        update_business(
-            business_id,
-            status="Has Website",
-            website_url=result["url"],
-        )
-
-    return result
+@app.post("/businesses/verify-batch")
+def verify_batch(status: str = "New", limit: int = 50):
+    """Qualify leads in bulk: verify every business with the given status
+    (default 'New'). Rate-limited to ~1 req/s for the Brave free tier.
+    Returns a summary; rows are updated to 'Has Website' / 'Phantom' as
+    results come in. Clean leads keep their status."""
+    if not os.environ.get("BRAVE_API_KEY", ""):
+        raise HTTPException(503, "BRAVE_API_KEY not set — batch verify "
+                                 "requires the Brave Search API")
+    rows = get_businesses(status=status, limit=limit)
+    summary = {"checked": 0, "has_website": 0, "phantom": 0,
+               "clean": 0, "errors": 0, "details": []}
+    for biz in rows:
+        result = _verify_one(dict(biz))
+        summary["checked"] += 1
+        if result.get("error"):
+            summary["errors"] += 1
+            outcome = f"error: {result['error']}"
+        elif result.get("has_website"):
+            summary["has_website"] += 1
+            outcome = f"has website: {result['url']}"
+        elif result.get("exists") is False:
+            summary["phantom"] += 1
+            outcome = "phantom (zero search results)"
+        else:
+            summary["clean"] += 1
+            outcome = "clean — no website found, business exists"
+        summary["details"].append({"id": biz["id"], "name": biz["name"],
+                                   "outcome": outcome})
+        time.sleep(1.1)  # Brave free tier: 1 request/second
+    return summary
 
 
 @app.delete("/businesses/{business_id}")

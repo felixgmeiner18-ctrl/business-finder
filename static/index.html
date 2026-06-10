@@ -290,6 +290,7 @@ header {
 .seg[data-s="No Answer"].active { color: var(--s-na); }
 .seg[data-s="Voicemail"].active { color: var(--s-vm); }
 .seg[data-s="Has Website"].active { color: var(--s-web); }
+.seg[data-s="Phantom"].active  { color: var(--s-no); }
 .seg[data-s="__due__"].active  { color: var(--s-called); }
 .seg[data-s="__overdue__"].active { color: var(--s-no); }
 .seg[data-s="__has_email__"].active { color: var(--s-called); }
@@ -461,6 +462,7 @@ header {
 .card[data-status="No Answer"]     .card-stripe { background: var(--s-na); }
 .card[data-status="Voicemail"]     .card-stripe { background: var(--s-vm); }
 .card[data-status="Has Website"]   .card-stripe { background: var(--s-web); }
+.card[data-status="Phantom"]       .card-stripe { background: var(--s-no); }
 
 .card-body { padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
 
@@ -1041,6 +1043,7 @@ header {
         <button class="seg" data-s="__overdue__" onclick="setStatus(this,'__overdue__')">🔴 Overdue</button>
         <button class="seg" data-s="__has_email__" onclick="setStatus(this,'__has_email__')">&#9993; Has Email</button>
         <button class="seg" data-s="Has Website" onclick="setStatus(this,'Has Website')">Has Website</button>
+        <button class="seg" data-s="Phantom" onclick="setStatus(this,'Phantom')">Phantom</button>
       </div>
       <select class="cat-select" id="catSelect" onchange="applyFilters()">
         <option value="">All categories</option>
@@ -1232,8 +1235,8 @@ function applyFilters() {
     } else if (activeStatus) {
       if (b.status !== activeStatus) return false;
     } else {
-      // "All" hides "Has Website" by default
-      if (b.status === 'Has Website') return false;
+      // "All" hides "Has Website" and "Phantom" by default
+      if (b.status === 'Has Website' || b.status === 'Phantom') return false;
     }
 
     if (cat && (b.category||'').toLowerCase() !== cat) return false;
@@ -1246,7 +1249,7 @@ function applyFilters() {
 
   renderCards(visible);
   const el = document.getElementById('resultCount');
-  const total = all.filter(b => b.status !== 'Has Website').length;
+  const total = all.filter(b => b.status !== 'Has Website' && b.status !== 'Phantom').length;
   el.textContent = visible.length === total
     ? `${total} lead${total !== 1 ? 's' : ''}`
     : `${visible.length} of ${total} leads`;
