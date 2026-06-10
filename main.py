@@ -354,6 +354,13 @@ def admin_dashboard():
     return FileResponse("static/index.html")
 
 
+@app.get("/review")
+def mobile_review():
+    """Mobile lead review — approve/reject from the phone. Protected by the
+    basic-auth middleware like every non-public path."""
+    return FileResponse("static/review.html")
+
+
 @app.get("/businesses")
 def list_businesses(
     status: str | None = Query(None),

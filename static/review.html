@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de-AT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Lead Review — handwerkerweb.at</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12181d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛠️</text></svg>">
+<style>
+:root{
+  --ink:#12181d; --ink-2:#1a2229; --ink-3:#222d36;
+  --paper:#f2f1ec; --timber:#e09a4e; --mist:#9fb1bd; --stone:#5c6b76;
+  --green:#4ade80; --red:#f87171;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--ink);color:var(--paper);
+  font-size:16px;line-height:1.5;padding-bottom:40px}
+header{position:sticky;top:0;z-index:10;background:rgba(18,24,29,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--ink-3);padding:14px 16px calc(10px + env(safe-area-inset-top) * 0)}
+header h1{font-size:1.05rem;font-weight:800;letter-spacing:.02em}
+header h1 b{color:var(--timber)}
+header .sub{font-size:.74rem;color:var(--stone);font-family:Consolas,monospace}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--ink-2);border:1px solid var(--ink-3);color:var(--mist);
+  border-radius:99px;padding:8px 16px;font-size:.85rem;font-weight:600;cursor:pointer}
+.chip.active{background:var(--timber);border-color:var(--timber);color:var(--ink)}
+.chip .n{opacity:.7;font-size:.75rem}
+main{padding:4px 16px}
+.lead{background:var(--ink-2);border:1px solid var(--ink-3);border-radius:16px;
+  padding:16px;margin-bottom:14px;transition:opacity .3s,transform .3s}
+.lead.gone{opacity:0;transform:translateX(60px)}
+.lead .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.lead h2{font-size:1.05rem;font-weight:700}
+.badge{font-size:.62rem;letter-spacing:.06em;padding:3px 10px;border-radius:99px;
+  border:1px solid var(--ink-3);color:var(--stone);white-space:nowrap;flex-shrink:0}
+.badge.New{color:#6dd3e0;border-color:#2a5660}
+.badge.Approved{color:var(--green);border-color:#2a5d3f}
+.badge.Rejected,.badge.Phantom{color:var(--red);border-color:#5d2a2a}
+.lead .meta{color:var(--mist);font-size:.85rem;margin:6px 0 4px}
+.lead .meta a{color:var(--timber);text-decoration:none;font-weight:600}
+.lead .note{color:var(--stone);font-size:.78rem;font-style:italic;margin-top:2px}
+.lead .web a{color:#6dd3e0;font-size:.82rem;word-break:break-all}
+.acts{display:flex;gap:10px;margin-top:14px}
+.b{flex:1;border:1px solid var(--ink-3);background:var(--ink);color:var(--paper);
+  border-radius:12px;padding:13px 0;font-size:.92rem;font-weight:700;cursor:pointer;
+  text-align:center;text-decoration:none}
+.b:active{transform:scale(.97)}
+.b.ok{border-color:#2a5d3f;color:var(--green)}
+.b.no{border-color:#5d2a2a;color:var(--red)}
+.empty{text-align:center;color:var(--stone);padding:60px 20px;font-size:.95rem}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--timber);color:var(--ink);font-weight:700;font-size:.88rem;
+  padding:12px 22px;border-radius:99px;transition:transform .3s;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛠️ Lead Review <b>— handwerkerweb.at</b></h1>
+  <div class="sub" id="sub">lade …</div>
+</header>
+<div class="chips" id="chips">
+  <button class="chip active" data-s="New">🆕 Neu <span class="n" id="nNew"></span></button>
+  <button class="chip" data-s="Approved">✅ Aufgenommen <span class="n" id="nApproved"></span></button>
+  <button class="chip" data-s="Rejected">✕ Abgelehnt</button>
+  <button class="chip" data-s="Has Website">🌐 Hat Website</button>
+  <button class="chip" data-s="Phantom">👻 Phantom</button>
+</div>
+<main id="list"><div class="empty">Lade Leads …</div></main>
+<div id="toast"></div>
+
+<script>
+const TRADES = new Set(["electrician","plumber","hvac","heating_engineer","carpenter",
+  "painter","roofer","tiler","glazier","locksmith","metal_construction","gasfitter",
+  "stonemason","plasterer","floorer","handyman"]);
+const CAT_DE = {electrician:"Elektriker",plumber:"Installateur",hvac:"Lüftung/Klima",
+  heating_engineer:"Heizungsbauer",carpenter:"Tischler/Zimmerer",painter:"Maler",
+  roofer:"Dachdecker",tiler:"Fliesenleger",glazier:"Glaser",locksmith:"Schlosser",
+  metal_construction:"Metallbau",gasfitter:"Gasinstallateur",stonemason:"Steinmetz",
+  plasterer:"Verputzer",floorer:"Bodenleger",handyman:"Handwerker"};
+
+let filter = "New";
+let all = [];
+
+const $ = id => document.getElementById(id);
+
+function toast(t){
+  const el = $("toast"); el.textContent = t; el.classList.add("show");
+  setTimeout(() => el.classList.remove("show"), 1800);
+}
+
+async function load(){
+  $("sub").textContent = "lade …";
+  const r = await fetch("/businesses?region=Vorarlberg&limit=2000");
+  if (!r.ok){ $("list").innerHTML = '<div class="empty">Fehler beim Laden — neu einloggen?</div>'; return; }
+  const data = await r.json();
+  all = (data.items || data).filter(b => TRADES.has(b.category));
+  $("nNew").textContent = "(" + all.filter(b => b.status === "New").length + ")";
+  $("nApproved").textContent = "(" + all.filter(b => b.status === "Approved").length + ")";
+  $("sub").textContent = all.length + " Trades-Leads · Vorarlberg · Stand " +
+    new Date().toLocaleTimeString("de-AT", {hour:"2-digit", minute:"2-digit"});
+  render();
+}
+
+function render(){
+  const rows = all.filter(b => b.status === filter);
+  if (!rows.length){
+    $("list").innerHTML = '<div class="empty">' +
+      (filter === "New" ? "🎉 Keine offenen Leads — alle gecheckt!" : "Nichts in dieser Liste.") + "</div>";
+    return;
+  }
+  $("list").innerHTML = rows.map(b => {
+    const q = encodeURIComponent(`${b.name} ${b.address || ""} Vorarlberg`);
+    const tel = (b.phone || "").replace(/[^+\d]/g, "");
+    return `<div class="lead" id="lead-${b.id}">
+      <div class="top"><h2>${b.name}</h2><span class="badge ${b.status.replace(" ","")}">${b.status}</span></div>
+      <div class="meta">${CAT_DE[b.category] || b.category} · ${b.address || "—"} ${b.postal_code || ""}</div>
+      ${b.phone ? `<div class="meta">📞 <a href="tel:${tel}">${b.phone}</a></div>` : ""}
+      ${b.website_url ? `<div class="web">🌐 <a href="${b.website_url}" target="_blank" rel="noopener">${b.website_url}</a></div>` : ""}
+      ${b.notes ? `<div class="note">📝 ${b.notes}</div>` : ""}
+      <div class="acts">
+        <a class="b" target="_blank" rel="noopener" href="https://duckduckgo.com/?q=${q}">🔎 Check</a>
+        ${filter !== "Approved" ? `<button class="b ok" onclick="act(${b.id},'Approved')">✅ Aufnehmen</button>` : ""}
+        ${filter !== "Rejected" ? `<button class="b no" onclick="act(${b.id},'Rejected')">✕ Ablehnen</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function act(id, status){
+  const card = $("lead-" + id);
+  const r = await fetch(`/businesses/${id}`, {
+    method: "PATCH",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({status, notes: status === "Rejected" ? "Manuell abgelehnt (mobile review)" : null})
+  });
+  if (!r.ok){ toast("⚠️ Fehler — nochmal versuchen"); return; }
+  const b = all.find(x => x.id === id);
+  if (b) b.status = status;
+  toast(status === "Approved" ? "✅ Aufgenommen" : "✕ Abgelehnt");
+  if (card){ card.classList.add("gone"); setTimeout(render, 320); }
+  $("nNew").textContent = "(" + all.filter(x => x.status === "New").length + ")";
+  $("nApproved").textContent = "(" + all.filter(x => x.status === "Approved").length + ")";
+}
+
+document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+  filter = c.dataset.s;
+  document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+  c.classList.add("active");
+  render();
+}));
+
+load();
+</script>
+</body>
+</html>
