@@ -55,6 +55,8 @@ class UpdatePayload(BaseModel):
     notes: str | None = None
     follow_up: str | None = None
     website_url: str | None = None
+    priority: int | None = None
+    postal_code: str | None = None
 
 
 class SearchPayload(BaseModel):
@@ -551,6 +553,8 @@ def update(business_id: int, payload: UpdatePayload):
         notes=payload.notes,
         follow_up=payload.follow_up,
         website_url=payload.website_url,
+        priority=payload.priority,
+        postal_code=payload.postal_code,
     )
     return {"ok": True}
 

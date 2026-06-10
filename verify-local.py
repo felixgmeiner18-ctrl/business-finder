@@ -28,6 +28,7 @@ import time
 
 import httpx
 
+from qualify import hard_disqualify, repair_postcode, score
 from scraper import TRADES_CRAFT_TAGS
 from verify import check_website_brave, check_website_ddg
 
@@ -76,12 +77,31 @@ def main() -> int:
           f"— engine: {'brave' if BRAVE_KEY else 'ddg'}"
           f"{' (DRY RUN)' if args.dry_run else ''}\n")
 
-    counts = {"has_website": 0, "phantom": 0, "clean": 0, "error": 0}
+    counts = {"disqualified": 0, "has_website": 0, "phantom": 0,
+              "clean": 0, "error": 0}
     challenges = 0
     lo, hi = BRAVE_DELAY if BRAVE_KEY else DDG_DELAY
 
     for i, biz in enumerate(rows, 1):
         name, region = biz["name"], biz.get("region", "")
+
+        # Stage 1 — hard disqualifiers, no search query wasted on junk
+        reason = hard_disqualify(biz)
+        if reason:
+            counts["disqualified"] += 1
+            print(f"  [{i}/{len(rows)}] {name}: AUTO-REJECT — {reason}")
+            if not args.dry_run:
+                client.patch(f"/businesses/{biz['id']}", json={
+                    "status": "Rejected",
+                    "notes": f"Auto: {reason}"}).raise_for_status()
+            continue
+
+        # Stage 2 — repair missing PLZ from the town name
+        new_plz = repair_postcode(biz)
+        if new_plz:
+            biz["postal_code"] = new_plz
+            print(f"  [{i}/{len(rows)}] {name}: PLZ ergänzt → {new_plz}")
+
         result = check(name, region)
 
         if result.get("error"):
@@ -111,8 +131,13 @@ def main() -> int:
                 "notes": "Auto: zero search results — likely OSM phantom "
                          "(verify-local)"}
         else:
+            # Stage 3 — clean lead: score it so review shows best first
             counts["clean"] += 1
-            verdict, patch = "clean — no website, business exists", None
+            pts = score(biz, exists=result["exists"])
+            verdict, patch = f"CLEAN — Score P{pts}", {"priority": pts}
+
+        if new_plz and patch is not None:
+            patch["postal_code"] = new_plz
 
         print(f"  [{i}/{len(rows)}] {name}: {verdict}")
         if patch and not args.dry_run:
@@ -121,11 +146,11 @@ def main() -> int:
         if i < len(rows):
             time.sleep(random.uniform(lo, hi))
 
-    print(f"\nDone. has_website={counts['has_website']}  "
-          f"phantom={counts['phantom']}  clean={counts['clean']}  "
-          f"errors={counts['error']}")
-    print("Clean leads keep status and are the outreach pool. "
-          "Spot-check ~3 of them manually before generating letters!")
+    print(f"\nDone. disqualified={counts['disqualified']}  "
+          f"has_website={counts['has_website']}  phantom={counts['phantom']}  "
+          f"clean={counts['clean']}  errors={counts['error']}")
+    print("Clean leads keep status=New with a P1-P10 score (priority). "
+          "Review shows highest score first — spot-check ~3 before letters!")
     return 0
 
 

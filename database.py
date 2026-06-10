@@ -187,7 +187,8 @@ def get_businesses(status=None, region=None, category=None, limit=500, offset=0)
     return {"items": results, "total": total, "limit": limit, "offset": offset}
 
 
-def update_business(business_id, status=None, notes=None, follow_up=None, website_url=None):
+def update_business(business_id, status=None, notes=None, follow_up=None,
+                    website_url=None, priority=None, postal_code=None):
     fields, params = [], []
     if status is not None:
         fields.append("status=?")
@@ -201,6 +202,12 @@ def update_business(business_id, status=None, notes=None, follow_up=None, websit
     if website_url is not None:
         fields.append("website_url=?")
         params.append(website_url)
+    if priority is not None:
+        fields.append("priority=?")
+        params.append(int(priority))
+    if postal_code is not None:
+        fields.append("postal_code=?")
+        params.append(postal_code)
     if not fields:
         return
     params.append(business_id)

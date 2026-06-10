@@ -38,6 +38,10 @@ main{padding:4px 16px}
 .badge{font-size:.62rem;letter-spacing:.06em;padding:3px 10px;border-radius:99px;
   border:1px solid var(--ink-3);color:var(--stone);white-space:nowrap;flex-shrink:0}
 .badge.New{color:#6dd3e0;border-color:#2a5660}
+.pbadge{font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:99px;flex-shrink:0}
+.pbadge.hi{background:#1d3d2a;color:var(--green)}
+.pbadge.mid{background:#3d3320;color:var(--timber)}
+.pbadge.lo{background:#2a2f36;color:var(--stone)}
 .badge.Approved{color:var(--green);border-color:#2a5d3f}
 .badge.Rejected,.badge.Phantom{color:var(--red);border-color:#5d2a2a}
 .lead .meta{color:var(--mist);font-size:.85rem;margin:6px 0 4px}
@@ -107,7 +111,8 @@ async function load(){
 }
 
 function render(){
-  const rows = all.filter(b => b.status === filter);
+  const rows = all.filter(b => b.status === filter)
+    .sort((a, b) => (b.priority || 5) - (a.priority || 5));
   if (!rows.length){
     $("list").innerHTML = '<div class="empty">' +
       (filter === "New" ? "🎉 Keine offenen Leads — alle gecheckt!" : "Nichts in dieser Liste.") + "</div>";
@@ -117,7 +122,9 @@ function render(){
     const q = encodeURIComponent(`${b.name} ${b.address || ""} Vorarlberg`);
     const tel = (b.phone || "").replace(/[^+\d]/g, "");
     return `<div class="lead" id="lead-${b.id}">
-      <div class="top"><h2>${b.name}</h2><span class="badge ${b.status.replace(" ","")}">${b.status}</span></div>
+      <div class="top"><h2>${b.name}</h2><span style="display:flex;gap:6px;align-items:center">
+        ${b.status === "New" ? `<span class="pbadge ${(b.priority||5) >= 8 ? "hi" : (b.priority||5) >= 6 ? "mid" : "lo"}">P${b.priority || 5}</span>` : ""}
+        <span class="badge ${b.status.replace(" ","")}">${b.status}</span></span></div>
       <div class="meta">${CAT_DE[b.category] || b.category} · ${b.address || "—"} ${b.postal_code || ""}</div>
       ${b.phone ? `<div class="meta">📞 <a href="tel:${tel}">${b.phone}</a></div>` : ""}
       ${b.website_url ? `<div class="web">🌐 <a href="${b.website_url}" target="_blank" rel="noopener">${b.website_url}</a></div>` : ""}
