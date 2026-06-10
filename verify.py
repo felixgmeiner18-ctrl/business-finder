@@ -65,20 +65,43 @@ _BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
 _DDG_URL = "https://html.duckduckgo.com/html/"
 
 
-def _first_own_domain(urls: list[str]) -> str | None:
-    """First URL whose domain is neither a directory nor a search engine."""
+_GENERIC_TOKENS = {"gmbh", "und", "kg", "og"}
+
+
+def _name_tokens(name: str) -> list[str]:
+    """Business-name tokens usable as domain evidence (umlauts folded)."""
+    folded = (name.lower().replace("ä", "ae").replace("ö", "oe")
+              .replace("ü", "ue").replace("ß", "ss"))
+    return [t for t in re.findall(r"[a-z]+", folded)
+            if len(t) >= 4 and t not in _GENERIC_TOKENS]
+
+
+def _first_own_domain(urls: list[str], name: str = "") -> str | None:
+    """First URL that plausibly IS the business's own website.
+
+    Blocklists never keep up with directory/aggregator sites, so unknown
+    domains must earn trust: either a business-name token appears in the
+    domain, or the hit is the domain's homepage. Directory hits are deep
+    links on unrelated domains and fail both tests. False rejects only
+    leave the lead 'clean', where Felix's review catches it — false
+    accepts would silently throw the lead away.
+    """
+    tokens = _name_tokens(name)
     for url in urls:
-        m = re.match(r"https?://(?:www\.)?([^/]+)", url)
+        m = re.match(r"https?://(?:www\.)?([^/]+)(/?[^?#]*)", url)
         if not m:
             continue
-        domain = m.group(1).lower()
+        domain, path = m.group(1).lower(), m.group(2)
         if any(d in domain for d in DIRECTORY_DOMAINS):
             continue
         if any(s in domain for s in SKIP_DOMAINS):
             continue
         if DIRECTORY_PATH_HINTS.search(url):
             continue
-        return url
+        token_match = any(t in domain for t in tokens)
+        is_homepage = path in ("", "/")
+        if token_match or is_homepage:
+            return url
     return None
 
 
@@ -110,7 +133,7 @@ def check_website_brave(name: str, region: str, api_key: str) -> dict:
         or name_lower in r.get("description", "").lower()
         for r in results
     )
-    found_url = _first_own_domain([r.get("url", "") for r in results])
+    found_url = _first_own_domain([r.get("url", "") for r in results], name)
     return {"has_website": bool(found_url), "url": found_url,
             "exists": exists, "error": None}
 
@@ -151,6 +174,6 @@ def check_website_ddg(name: str, region: str) -> dict:
     # Existence: name appears in titles/snippets. Unescape first —
     # "Hase & Kramer" arrives as "Hase &amp; Kramer" in raw HTML.
     exists = name.lower() in html_lib.unescape(page).lower()
-    found_url = _first_own_domain(raw_urls)
+    found_url = _first_own_domain(raw_urls, name)
     return {"has_website": bool(found_url), "url": found_url,
             "exists": exists, "error": None}
