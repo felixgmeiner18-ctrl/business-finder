@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import io
 import json
 import os
@@ -31,9 +32,11 @@ from database import (
     get_letter_pdf,
     get_letters,
     get_settings,
+    get_status_summary,
     init_db,
     mark_letter_failed,
     mark_letter_sent,
+    record_lander_visit,
     reject_letter,
     retry_failed_letter,
     save_contact_submission,
@@ -361,6 +364,20 @@ def mobile_review():
     """Mobile lead review — approve/reject from the phone. Protected by the
     basic-auth middleware like every non-public path."""
     return FileResponse("static/review.html")
+
+
+@app.get("/status")
+def status_page():
+    """Business cockpit — funnel, per-letter scans, replies. Phone-first,
+    protected by the basic-auth middleware. Must stay registered before the
+    GET /{code} lander catch-all or 'status' gets swallowed as a code."""
+    return FileResponse("static/status.html")
+
+
+@app.get("/api/status/summary")
+def status_summary():
+    """Admin-only: one JSON blob with the whole funnel — feeds /status."""
+    return get_status_summary()
 
 
 @app.get("/businesses")
@@ -784,15 +801,33 @@ async def retry_letter_endpoint(letter_id: int):
 
 
 @app.get("/{code}")
-async def letter_lander(code: str):
+async def letter_lander(code: str, request: Request):
     """Lander page for a postal letter's tracking URL (e.g. handwerkerweb.at/VB02).
 
     Only matches paths that look like a tracking code (VB + 2 digits) — anything
     else falls through with 404. Path is whitelisted in `basic_auth` middleware
     above, so the page is publicly reachable from the QR code in the letter.
+    Every hit lands in lander_visits — the per-letter scan signal.
     """
     if not re.match(r"^VB\d{2}$", code):
         raise HTTPException(404)
+    try:
+        # Behind Cloudflare the real client IP is cf-connecting-ip; the
+        # x-forwarded-for chain and request.client only see the proxies.
+        ip = (request.headers.get("cf-connecting-ip")
+              or (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+              or (request.client.host if request.client else ""))
+        salt = os.environ.get("VISIT_SALT", "handwerkerweb")
+        ip_hash = hashlib.sha256(f"{salt}{ip}".encode()).hexdigest()[:16] if ip else ""
+        record_lander_visit(
+            code,
+            user_agent=request.headers.get("user-agent", ""),
+            referer=request.headers.get("referer", ""),
+            ip_hash=ip_hash,
+        )
+    except Exception as e:
+        # Analytics must never break the lander — a scan that 500s is a lost lead.
+        print(f"[visits] failed to record {code}: {e}")
     return FileResponse("static/lander.html")
 
 

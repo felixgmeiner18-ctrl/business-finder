@@ -136,6 +136,21 @@ def init_db():
                 created_at TEXT
             )
         """)
+        # Lander visit log (2026-06-11 visit-tracking patch): one row per page
+        # load of /VBxx — the exact per-letter scan signal. Cloudflare analytics
+        # is sampled and bot-polluted; this table is ground truth.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS lander_visits (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                tracking_code TEXT NOT NULL,
+                visited_at    TEXT NOT NULL,
+                user_agent    TEXT DEFAULT '',
+                referer       TEXT DEFAULT '',
+                ip_hash       TEXT DEFAULT ''
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_code ON lander_visits(tracking_code)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_visits_at   ON lander_visits(visited_at DESC)")
         conn.commit()
 
 
@@ -443,3 +458,74 @@ def retry_failed_letter(letter_id: int) -> bool:
         )
         conn.commit()
         return cursor.rowcount > 0
+
+
+# ─────────────────────────────────────────────────────────────────
+# Lander visits + status summary (2026-06-11 visit-tracking patch)
+# ─────────────────────────────────────────────────────────────────
+
+
+def record_lander_visit(tracking_code: str, user_agent: str = "", referer: str = "", ip_hash: str = ""):
+    """One row per lander page load. Stray codes (bots probing /VB99) are
+    logged too — the per-letter funnel joins FROM letters, so they only
+    show up in totals, never in the letter table."""
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO lander_visits (tracking_code, visited_at, user_agent, referer, ip_hash) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (tracking_code, datetime.utcnow().isoformat(),
+             (user_agent or "")[:250], (referer or "")[:250], ip_hash),
+        )
+        conn.commit()
+
+
+def get_status_summary() -> dict:
+    """Everything the /status cockpit needs in one call: lead + letter counts,
+    the per-letter visit funnel, recent scans, and contact-form replies."""
+    with get_conn() as conn:
+        lead_rows = conn.execute(
+            "SELECT status, COUNT(*) AS n FROM businesses GROUP BY status ORDER BY n DESC"
+        ).fetchall()
+        letter_rows = conn.execute(
+            "SELECT status, COUNT(*) AS n FROM letters GROUP BY status"
+        ).fetchall()
+        per_letter = conn.execute("""
+            SELECT l.tracking_code, l.status, l.sent_at, l.template_version,
+                   COALESCE(b.name, '?') AS business,
+                   COALESCE(v.n, 0) AS visits, v.first_visit, v.last_visit
+              FROM letters l
+              LEFT JOIN businesses b ON b.id = l.business_id
+              LEFT JOIN (SELECT tracking_code, COUNT(*) AS n,
+                                MIN(visited_at) AS first_visit,
+                                MAX(visited_at) AS last_visit
+                           FROM lander_visits GROUP BY tracking_code) v
+                     ON v.tracking_code = l.tracking_code
+             ORDER BY l.tracking_code
+        """).fetchall()
+        visits_total = conn.execute("SELECT COUNT(*) FROM lander_visits").fetchone()[0]
+        recent_visits = conn.execute(
+            "SELECT tracking_code, visited_at, user_agent, ip_hash "
+            "FROM lander_visits ORDER BY visited_at DESC LIMIT 20"
+        ).fetchall()
+        replies_total = conn.execute("SELECT COUNT(*) FROM contact_submissions").fetchone()[0]
+        replies = conn.execute(
+            "SELECT name, email, phone, message, created_at "
+            "FROM contact_submissions ORDER BY created_at DESC LIMIT 5"
+        ).fetchall()
+        customers = conn.execute(
+            "SELECT COUNT(*) FROM businesses WHERE status='Customer'"
+        ).fetchone()[0]
+    return {
+        "leads": {
+            "total": sum(r["n"] for r in lead_rows),
+            "by_status": {r["status"]: r["n"] for r in lead_rows},
+        },
+        "letters": {
+            "total": sum(r["n"] for r in letter_rows),
+            "by_status": {r["status"]: r["n"] for r in letter_rows},
+            "per_letter": [dict(r) for r in per_letter],
+        },
+        "visits": {"total": visits_total, "recent": [dict(r) for r in recent_visits]},
+        "replies": {"total": replies_total, "recent": [dict(r) for r in replies]},
+        "customers": {"total": customers},
+    }
