@@ -78,14 +78,50 @@ main{padding:4px 16px}
 <div id="toast"></div>
 
 <script>
-const TRADES = new Set(["electrician","plumber","hvac","heating_engineer","carpenter",
-  "painter","roofer","tiler","glazier","locksmith","metal_construction","gasfitter",
-  "stonemason","plasterer","floorer","handyman"]);
+// Mirrors qualify.REALISTIC_CATEGORIES (niche v2, 2026-06-10 amendment) —
+// keep in sync when qualify.py changes.
+const REALISTIC = new Set([
+  // gastro
+  "restaurant","fast_food","cafe","bar","pub","ice_cream","food_court","deli",
+  "nightclub","biergarten","events_venue",
+  // food craft
+  "bakery","butcher","cheese","farm","beverages",
+  // beauty & personal services
+  "hairdresser","beauty","cosmetics","massage","tattoo","dojo","ski_school",
+  "taxi","travel_agency","travel_agent","photographer","veterinary","hearing_aids",
+  // trades & home
+  "electrician","plumber","hvac","heating_engineer","carpenter","painter",
+  "roofer","tiler","glazier","locksmith","metal_construction","gasfitter",
+  "stonemason","plasterer","floorer","handyman","joiner","handicraft",
+  "gardener","cleaner","car_repair","car_wash","car","moving_company",
+  "bathroom_furnishing","furniture","garden_centre","paint",
+  // small retail
+  "clothes","shoes","shoemaker","jewelry","florist","electronics","sports",
+  "bicycle","second_hand","gift","houseware","stationery","tailor","optician",
+  "guest_house","hotel"]);
 const CAT_DE = {electrician:"Elektriker",plumber:"Installateur",hvac:"Lüftung/Klima",
   heating_engineer:"Heizungsbauer",carpenter:"Tischler/Zimmerer",painter:"Maler",
   roofer:"Dachdecker",tiler:"Fliesenleger",glazier:"Glaser",locksmith:"Schlosser",
   metal_construction:"Metallbau",gasfitter:"Gasinstallateur",stonemason:"Steinmetz",
-  plasterer:"Verputzer",floorer:"Bodenleger",handyman:"Handwerker"};
+  plasterer:"Verputzer",floorer:"Bodenleger",handyman:"Handwerker",
+  restaurant:"Restaurant",fast_food:"Imbiss",cafe:"Café",bar:"Bar",pub:"Pub",
+  ice_cream:"Eisdiele",food_court:"Food Court",deli:"Feinkost",nightclub:"Club",
+  biergarten:"Biergarten",events_venue:"Eventlocation",bakery:"Bäckerei",
+  butcher:"Metzgerei",cheese:"Käserei",farm:"Hofladen",beverages:"Getränkehandel",
+  hairdresser:"Friseur",beauty:"Kosmetikstudio",cosmetics:"Kosmetik",
+  massage:"Massage",tattoo:"Tattoo-Studio",dojo:"Kampfsportschule",
+  ski_school:"Skischule",taxi:"Taxi",travel_agency:"Reisebüro",
+  travel_agent:"Reisebüro",photographer:"Fotograf",veterinary:"Tierarzt",
+  hearing_aids:"Hörgeräte",joiner:"Schreiner",handicraft:"Kunsthandwerk",
+  gardener:"Gärtner",cleaner:"Reinigung",car_repair:"Autowerkstatt",
+  car_wash:"Autowäsche",car:"Autohaus",moving_company:"Umzugsfirma",
+  bathroom_furnishing:"Badausstattung",furniture:"Möbel",
+  garden_centre:"Gartencenter",paint:"Farbenhandel",clothes:"Mode",
+  shoes:"Schuhgeschäft",shoemaker:"Schuster",jewelry:"Schmuck",
+  florist:"Blumenladen",electronics:"Elektronik",sports:"Sportgeschäft",
+  bicycle:"Fahrradladen",second_hand:"Second Hand",gift:"Geschenke",
+  houseware:"Haushaltswaren",stationery:"Schreibwaren",tailor:"Schneiderei",
+  optician:"Optiker",guest_house:"Pension",hotel:"Hotel"};
 
 let filter = "New";
 let all = [];
@@ -102,10 +138,10 @@ async function load(){
   const r = await fetch("/businesses?region=Vorarlberg&limit=2000");
   if (!r.ok){ $("list").innerHTML = '<div class="empty">Fehler beim Laden — neu einloggen?</div>'; return; }
   const data = await r.json();
-  all = (data.items || data).filter(b => TRADES.has(b.category));
+  all = (data.items || data).filter(b => REALISTIC.has(b.category));
   $("nNew").textContent = "(" + all.filter(b => b.status === "New").length + ")";
   $("nApproved").textContent = "(" + all.filter(b => b.status === "Approved").length + ")";
-  $("sub").textContent = all.length + " Trades-Leads · Vorarlberg · Stand " +
+  $("sub").textContent = all.length + " Leads · Vorarlberg · Stand " +
     new Date().toLocaleTimeString("de-AT", {hour:"2-digit", minute:"2-digit"});
   render();
 }
