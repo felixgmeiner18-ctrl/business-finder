@@ -55,7 +55,102 @@ KATEGORIE_LAIE_MAP = {
 
 DEFAULT_REGION = "Vorarlberg"
 TEMPLATE_FILENAME = "letter_template.html"
-TEMPLATE_VERSION = "v1"
+TEMPLATE_VERSION = "v2"
+
+# ── Letter v2 (niche v2, 2026-06-12): category-aware hook ──────────────────
+# Copy source of truth: (C) Letter v2 — Alle Betriebe.md (approved by Felix).
+
+# Akkusativ phrase with article — slots into "wer heute in {region} ___ sucht"
+KATEGORIE_AKK_MAP = {
+    # gastro
+    "cafe":        "ein gutes Café",
+    "restaurant":  "ein gutes Restaurant",
+    "fast_food":   "einen guten Imbiss",
+    "bar":         "eine gute Bar",
+    "ice_cream":   "eine gute Eisdiele",
+    "pub":         "ein gutes Lokal",
+    "biergarten":  "einen Biergarten",
+    # food craft
+    "bakery":      "eine gute Bäckerei",
+    "butcher":     "eine gute Metzgerei",
+    "beverages":   "einen Getränkehandel",
+    # beauty & services
+    "hairdresser": "einen guten Friseur",
+    "beauty":      "ein Kosmetikstudio",
+    "massage":     "eine Massagepraxis",
+    # retail
+    "second_hand": "einen Second-Hand-Laden",
+    "shoes":       "ein Schuhgeschäft",
+    "shoemaker":   "einen Schuster",
+    "florist":     "einen Blumenladen",
+    "clothes":     "ein Modegeschäft",
+    "optician":    "einen Optiker",
+    # trades & auto
+    "car":         "ein Autohaus",
+    "car_repair":  "eine verlässliche Werkstatt",
+    "joiner":      "einen Schreiner",
+    "carpenter":          "einen Tischler",
+    "electrician":        "einen Elektriker",
+    "plumber":            "einen Installateur",
+    "painter":            "einen Maler",
+    "locksmith":          "einen Schlosser",
+    "metal_construction": "einen Metallbauer",
+    "roofer":             "einen Dachdecker",
+    "heating_engineer":   "einen Heizungsbauer",
+    "tiler":              "einen Fliesenleger",
+    "stonemason":         "einen Steinmetz",
+    "plasterer":          "einen Verputzer",
+    "floorer":            "einen Bodenleger",
+    "handyman":           "einen Handwerker",
+    "gasfitter":          "einen Gas-Installateur",
+    "glazier":            "einen Glaser",
+    "hvac":               "einen Installateur",
+}
+KATEGORIE_AKK_FALLBACK = "einen Betrieb wie Ihren"
+
+# Category → Branchengruppe (drives pain line + offer list)
+KATEGORIE_GRUPPE = {
+    **{k: "gastro" for k in ("cafe", "restaurant", "fast_food", "bar",
+                             "ice_cream", "pub", "biergarten")},
+    **{k: "food"   for k in ("bakery", "butcher", "beverages", "farm",
+                             "deli", "cheese")},
+    **{k: "beauty" for k in ("hairdresser", "beauty", "massage",
+                             "cosmetics", "tattoo")},
+    **{k: "laden"  for k in ("second_hand", "shoes", "shoemaker", "florist",
+                             "clothes", "gift", "jewelry", "electronics",
+                             "sports", "bicycle", "houseware", "stationery",
+                             "optician", "tailor")},
+}
+GRUPPE_FALLBACK = "trades"  # all trades/auto categories + unknowns
+
+GRUPPEN_TEXTE = {
+    "gastro": {
+        "pain": "Wer dort nicht auftaucht, bekommt die Gäste nicht — auch "
+                "wenn es bei Ihnen besser schmeckt als nebenan.",
+        "angebot": "Öffnungszeiten, Speisekarte, Fotos, Anfahrt",
+    },
+    "food": {
+        "pain": "Wer dort nicht auftaucht, verliert Kundschaft an den "
+                "Supermarkt — auch wenn es bei Ihnen besser schmeckt.",
+        "angebot": "Öffnungszeiten, Sortiment, Bestellmöglichkeit",
+    },
+    "beauty": {
+        "pain": "Wer dort nicht auftaucht, bekommt die neuen Kunden nicht — "
+                "gebucht wird heute dort, wo man online gefunden wird.",
+        "angebot": "Leistungen, Preise, Öffnungszeiten, Terminanfrage",
+    },
+    "laden": {
+        "pain": "Wer dort nicht auftaucht, an dem gehen Neukunden vorbei — "
+                "auch wenn Auswahl und Beratung besser sind als jeder "
+                "Online-Shop.",
+        "angebot": "Öffnungszeiten, Sortiment, Anfahrt",
+    },
+    "trades": {
+        "pain": "Wer online nicht zu finden ist, wird nicht angerufen — auch "
+                "wenn die Arbeit besser ist als die der Konkurrenz.",
+        "angebot": "Leistungen, Referenzfotos, Kontakt",
+    },
+}
 
 
 # ─── Data shapes ────────────────────────────────────────────────────────────
@@ -108,6 +203,16 @@ def _kategorie_laie(lead: Lead) -> str:
     if lead.kategorie_laie_override:
         return lead.kategorie_laie_override
     return KATEGORIE_LAIE_MAP.get(lead.kategorie.lower(), "Handwerker")
+
+
+def _gruppe(lead: Lead) -> str:
+    """Branchengruppe (gastro/food/beauty/laden/trades) for v2 copy blocks."""
+    return KATEGORIE_GRUPPE.get(lead.kategorie.lower(), GRUPPE_FALLBACK)
+
+
+def _kategorie_akk(lead: Lead) -> str:
+    """Akkusativ phrase with article for the v2 opening sentence."""
+    return KATEGORIE_AKK_MAP.get(lead.kategorie.lower(), KATEGORIE_AKK_FALLBACK)
 
 
 def _qr_code_svg(payload: str) -> Markup:
@@ -185,6 +290,9 @@ def render_letter(
         "empfaenger_plz":     lead.plz,
         "empfaenger_ort":     lead.ort,
         "kategorie_laie":     _kategorie_laie(lead),
+        "kategorie_akk":      _kategorie_akk(lead),
+        "pain_satz":          GRUPPEN_TEXTE[_gruppe(lead)]["pain"],
+        "angebot_liste":      GRUPPEN_TEXTE[_gruppe(lead)]["angebot"],
 
         # sender
         "absender_name":    absender.name,

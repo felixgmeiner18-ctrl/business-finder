@@ -169,8 +169,11 @@ def _cli():
     )
     parser.add_argument("--dry-run", action="store_true",
                         help="Render PDFs and save locally but don't upload to Railway.")
+    parser.add_argument("--phase15", action="store_true",
+                        help="Use the Phase-1.5 list (leads_phase15.py, VB09-VB41) "
+                             "instead of the 8 Phase-1 leads.")
     parser.add_argument("--codes", default="",
-                        help="Comma-separated tracking codes to render (default: all 8).")
+                        help="Comma-separated tracking codes to render (default: all).")
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--user", default=DEFAULT_AUTH_USER)
     parser.add_argument("--password", default=DEFAULT_AUTH_PASS,
@@ -181,15 +184,22 @@ def _cli():
     if not args.dry_run and not args.password:
         sys.exit("ERROR: --password (or AUTH_PASS env var) is required for live uploads.")
 
+    # Pick the send list
+    if args.phase15:
+        from leads_phase15 import PHASE_15_LEADS
+        pool = PHASE_15_LEADS
+    else:
+        pool = PHASE_1_LEADS
+
     # Filter leads
     if args.codes:
         wanted = {c.strip().upper() for c in args.codes.split(",") if c.strip()}
-        leads = [l for l in PHASE_1_LEADS if l.code in wanted]
+        leads = [l for l in pool if l.code in wanted]
         missing = wanted - {l.code for l in leads}
         if missing:
             sys.exit(f"ERROR: Unknown codes: {sorted(missing)}")
     else:
-        leads = list(PHASE_1_LEADS)
+        leads = list(pool)
 
     absender = Absender.from_env()
     auth = (args.user, args.password)
