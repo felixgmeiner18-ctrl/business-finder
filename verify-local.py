@@ -18,6 +18,11 @@ Outcomes per lead:
     phantom      → PATCH status="Phantom" + note
     clean        → no PATCH (stays eligible for outreach)
     error        → no PATCH (prints reason; challenge pages trigger backoff)
+
+Railway 5xx / network errors are retried with backoff (5/15/45s). If a PATCH
+still fails, the lead stays status=New and is re-checked on the next run.
+Three consecutive PATCH failures abort the run — Railway is down, no point
+burning search queries whose verdicts can't be saved.
 """
 
 import argparse
@@ -41,6 +46,32 @@ DDG_DELAY = (15, 20)      # polite residential pacing, randomized
 BRAVE_DELAY = (1.1, 1.5)
 CHALLENGE_BACKOFF = 90    # seconds to wait after a DDG challenge page
 MAX_CONSECUTIVE_CHALLENGES = 2
+
+RETRY_SLEEPS = (5, 15, 45)        # Railway 502s usually clear within a minute
+MAX_CONSECUTIVE_PATCH_FAILS = 3   # then Railway is down — stop the run
+RAILWAY_ABORT = ("\nABORT: Railway PATCHes keep failing — backend looks down. "
+                 "Unsaved leads stay status=New and are re-checked next run.")
+
+
+def railway_call(do_request, desc: str):
+    """One Railway request, retrying 5xx/network errors with backoff.
+
+    4xx raises immediately (auth/data bug — a retry can't fix it).
+    Returns the response, or None once all retries are exhausted."""
+    for pause in (*RETRY_SLEEPS, None):
+        try:
+            resp = do_request()
+            if resp.status_code < 500:
+                resp.raise_for_status()
+                return resp
+            err = f"HTTP {resp.status_code}"
+        except httpx.TransportError as exc:
+            err = type(exc).__name__
+        if pause is None:
+            print(f"    {desc}: {err} — giving up")
+            return None
+        print(f"    {desc}: {err} — retrying in {pause}s")
+        time.sleep(pause)
 
 
 def check(name: str, region: str) -> dict:
@@ -72,7 +103,12 @@ def main() -> int:
     params = {"status": args.status, "limit": 500}
     if args.region:
         params["region"] = args.region
-    rows = client.get("/businesses", params=params).raise_for_status().json()
+    resp = railway_call(
+        lambda: client.get("/businesses", params=params), "GET /businesses")
+    if resp is None:
+        print("ABORT: Railway unreachable — try again later.")
+        return 1
+    rows = resp.json()
     if isinstance(rows, dict):
         rows = rows.get("items", rows.get("rows", []))
     if args.trades:
@@ -87,7 +123,20 @@ def main() -> int:
     counts = {"disqualified": 0, "has_website": 0, "phantom": 0,
               "clean": 0, "error": 0}
     challenges = 0
+    patch_fails = 0
     lo, hi = BRAVE_DELAY if BRAVE_KEY else DDG_DELAY
+
+    def save(biz_id, payload) -> bool:
+        """PATCH one verdict. False = run must abort (Railway down)."""
+        nonlocal patch_fails
+        if railway_call(lambda: client.patch(f"/businesses/{biz_id}",
+                                             json=payload),
+                        f"PATCH {biz_id}") is None:
+            counts["error"] += 1
+            patch_fails += 1
+            return patch_fails < MAX_CONSECUTIVE_PATCH_FAILS
+        patch_fails = 0
+        return True
 
     for i, biz in enumerate(rows, 1):
         name, region = biz["name"], biz.get("region", "")
@@ -97,10 +146,10 @@ def main() -> int:
         if reason:
             counts["disqualified"] += 1
             print(f"  [{i}/{len(rows)}] {name}: AUTO-REJECT — {reason}")
-            if not args.dry_run:
-                client.patch(f"/businesses/{biz['id']}", json={
-                    "status": "Rejected",
-                    "notes": f"Auto: {reason}"}).raise_for_status()
+            if not args.dry_run and not save(biz["id"], {
+                    "status": "Rejected", "notes": f"Auto: {reason}"}):
+                print(RAILWAY_ABORT)
+                return 2
             continue
 
         # Stage 2 — repair missing PLZ from the town name
@@ -148,8 +197,9 @@ def main() -> int:
             patch["postal_code"] = new_plz
 
         print(f"  [{i}/{len(rows)}] {name}: {verdict}")
-        if patch and not args.dry_run:
-            client.patch(f"/businesses/{biz['id']}", json=patch).raise_for_status()
+        if patch and not args.dry_run and not save(biz["id"], patch):
+            print(RAILWAY_ABORT)
+            return 2
 
         if i < len(rows):
             time.sleep(random.uniform(lo, hi))
