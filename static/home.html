@@ -120,6 +120,7 @@ nav .links a:hover{color:var(--ink)}
   transform:rotate(-7deg) translateZ(70px);animation:bob 6s ease-in-out .6s infinite}
 .gcube b{font-size:2.2rem;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
 .gcube span{font-size:.6rem;font-weight:700;letter-spacing:.16em;color:var(--ink2)}
+.gcube .mail{font-size:.46rem;letter-spacing:.02em;color:var(--ink);margin-top:3px}
 .gring{position:absolute;left:30px;bottom:10px;width:104px;height:104px;border-radius:50%;z-index:2;
   background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(255,255,255,.35));
   border:1px solid rgba(255,255,255,.95);backdrop-filter:blur(8px);
@@ -319,7 +320,8 @@ section{position:relative}
 
 /* ── GHOST PRICING ── */
 .pricing{padding:40px 0 130px;position:relative;overflow:hidden}
-.ghost{position:absolute;left:50%;top:-10px;transform:translateX(-50%);white-space:nowrap;
+/* scoped to .pricing — bare `.ghost` also hit the hero's .btn.ghost (giant "Anrufen" bug) */
+.pricing .ghost{position:absolute;left:50%;top:-10px;transform:translateX(-50%);white-space:nowrap;
   font-weight:800;font-size:clamp(8rem,24vw,19rem);letter-spacing:-.05em;color:#e9ece4;
   pointer-events:none;line-height:1;user-select:none}
 .pricing .wrap{position:relative;z-index:2}
@@ -493,7 +495,7 @@ footer .lbl{display:block;margin-bottom:12px}
           <span class="chip">JETZT ANFRAGEN</span>
         </div>
         <div class="gring"><b>€ 590</b></div>
-        <div class="gcube"><b>24h</b><span>ÄNDERUNGS-SERVICE</span></div>
+        <div class="gcube"><b>24h</b><span>ÄNDERUNGS-SERVICE</span><span class="mail">felix.gmeiner18@gmail.com</span></div>
       </div>
     </div>
   </div>
@@ -583,7 +585,7 @@ footer .lbl{display:block;margin-bottom:12px}
     <h2 class="mask" style="margin-top:18px"><span class="ln"><i>Änderungen?</i></span><span class="ln"><i>Eine Nachricht genügt<span class="dim2">.</span></i></span></h2>
     <p class="lead">Neue Öffnungszeiten, Betriebsurlaub, frische Fotos — Sie schreiben uns wie einem Kollegen. Kein Programm lernen, kein Techniker-Termin, kein Stundensatz. In 24 Stunden ist es online.</p>
     <div class="steps">
-      <div class="step reveal"><div class="n">SCHRITT 01</div><h3>Sie schreiben uns</h3><p>Per WhatsApp oder E-Mail — so wie Sie es jeden Tag tun.</p>
+      <div class="step reveal"><div class="n">SCHRITT 01</div><h3>Sie schreiben uns</h3><p>Per WhatsApp oder E-Mail an felix.gmeiner18@gmail.com — so wie Sie es jeden Tag tun.</p>
         <div class="ex">„Ab August samstags geschlossen."</div></div>
       <div class="step reveal d1"><div class="n">SCHRITT 02</div><h3>Wir setzen um</h3><p>Keine Rückfragen-Schleife. Ihre Änderung wird eingebaut und geprüft.</p>
         <div class="ex">Umsetzung &amp; Kontrolle — ohne Ihr Zutun.</div></div>
@@ -640,7 +642,7 @@ footer .lbl{display:block;margin-bottom:12px}
       <div class="price hot reveal d1">
         <span class="tag">EMPFOHLEN</span>
         <h3>Wartung &amp; Änderungen</h3>
-        <div class="amount">€ 19<small> / MONAT · OPTIONAL</small></div>
+        <div class="amount">€ 35<small> / MONAT · OPTIONAL</small></div>
         <ul>
           <li><b>Unbegrenzte Änderungen per Nachricht — in 24 h online</b></li>
           <li>Hosting &amp; Technik-Betreuung</li>
@@ -699,7 +701,7 @@ footer .lbl{display:block;margin-bottom:12px}
       <h2 class="reveal">Kurz beantwortet<span class="dim2">.</span></h2>
     </div>
     <div class="list">
-      <details class="reveal"><summary>Was kostet die Website nach dem ersten Jahr?</summary><div class="a">Ohne Wartungspaket: nur die Domain-Verlängerung (ca. € 12–15/Jahr, direkt beim Anbieter — die Domain gehört ja Ihnen). Mit Wartungspaket (€ 19/Monat) ist alles abgedeckt, inklusive aller Änderungen.</div></details>
+      <details class="reveal"><summary>Was kostet die Website nach dem ersten Jahr?</summary><div class="a">Ohne Wartungspaket: nur die Domain-Verlängerung (ca. € 12–15/Jahr, direkt beim Anbieter — die Domain gehört ja Ihnen). Mit Wartungspaket (€ 35/Monat) ist alles abgedeckt, inklusive aller Änderungen.</div></details>
       <details class="reveal"><summary>Wem gehört die Domain (Internet-Adresse)?</summary><div class="a">Ihnen. Wir registrieren sie auf Ihren Namen und Ihre Daten. Falls Sie irgendwann wechseln wollen, nehmen Sie Domain und Website einfach mit — kein Kleingedrucktes.</div></details>
       <details class="reveal"><summary>Ich kenne mich mit Computern nicht aus. Problem?</summary><div class="a">Im Gegenteil — genau dafür sind wir da. Sie müssen nichts bedienen, nichts installieren, nichts lernen. Änderungen schicken Sie als normale Nachricht, alles andere machen wir.</div></details>
       <details class="reveal"><summary>Ist die Vollbild-Demo wirklich meine Website?</summary><div class="a">Sie ist der Startpunkt: Aufbau und Gefühl stimmen, danach passen wir Farben, Fotos, Texte und Leistungen individuell auf Ihren Betrieb an. Der erste echte Entwurf kommt nach 7 Tagen.</div></details>
